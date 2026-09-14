@@ -6,6 +6,7 @@
 |---|---|
 | Dat Quoc Pham | heoconngoc |
 | Jerry Chen | Jerry605185 |
+| Palaash Bhathena |  |
 
 ## Working Agreement
 
