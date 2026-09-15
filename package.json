@@ -1,0 +1,25 @@
+{
+  "name": "cs326_project",
+  "version": "1.0.0",
+  "description": "| Name | GitHub Username | |---|---| | Dat Quoc Pham | heoconngoc | | Jerry Chen | Jerry605185 |",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heoconngoc/cs326_project.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/heoconngoc/cs326_project/issues"
+  },
+  "homepage": "https://github.com/heoconngoc/cs326_project#readme",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
