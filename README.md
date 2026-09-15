@@ -14,3 +14,6 @@
 - Pull requests: All changes to `main` must be submitted through a pull request and approved by at least one teammate before merging.
 - Definition of done: A PR is considered done when the changes are implemented, reviewed by at least one teammate, and all requested changes have been addressed.
 - Disagreements: We will respectfully discuss disagreements together and make decisions based on the project requirements and technical reasoning.
+
+## Project Domain
+We will be working on developing a lost and found system that benefits those who lost their stuff. This will make the process of lost and found much more effective. People lost their stuff won't need to go the actual lost and found office. Instead, they can just check online if their stuff has been found or not.In addition, the system will allow users to post detailed descriptions of lost items and upload photos, while finders can record found items with information such as category, color, brand, location, and date.
