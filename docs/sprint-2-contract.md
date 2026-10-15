@@ -4,7 +4,7 @@
 
 - **Backend:** Node.js, Express.js (ES Modules)
 - **Frontend:** EJS, HTML, CSS, Vanilla JavaScript
-- **Database:** MongoDB Atlas + Mongoose
+- **Database:** MongoDB + Mongoose
 - **Architecture:** Routes → Controller → Service → Repository
 
 **Sprint 2 Feature:** Submit a lost item through a browser form, validate the input, save it to MongoDB, and display the result.

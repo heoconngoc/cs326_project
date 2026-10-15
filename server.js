@@ -1,4 +1,5 @@
 import express from "express";
+import { connectDB } from "./config/database.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,13 @@ app.get("/lost-items", (req, res) => {
 })
 // get lost items
 
-app.listen(PORT, () => {
-  console.log(`Listening on http://localhost:${PORT}`);
-});
+try {
+  await connectDB();
+
+  app.listen(PORT, () => {
+    console.log(`Listening on http://localhost:${PORT}`);
+  });
+} catch (error) {
+  console.error("Failed to connect to MongoDB:", error.message);
+  process.exitCode = 1;
+}
