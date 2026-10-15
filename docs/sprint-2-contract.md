@@ -25,7 +25,7 @@ Out of scope: image uploads, authentication, and item claiming.
 | color | String | No | Max 50 characters; default `""` |
 | brand | String | No | Max 80 characters; default `""` |
 | contactInfo | String | No | Max 150 characters; default `""` |
-| status | String | Auto | Default `"open"` |
+| status | String | Auto | Enum: `"open"`, `"closed"`; default `"open"` |
 | _id | ObjectId | Auto | MongoDB-generated |
 | createdAt, updatedAt | Date | Auto | Mongoose timestamps |
 

@@ -54,7 +54,7 @@ const lostItemSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["open", "close"],
+      enum: ["open", "closed"],
       default: "open"
     },
   },
