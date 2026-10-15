@@ -5,7 +5,7 @@ const lostItemSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
-      tim: true,
+      trim: true,
       minlength: 3,
       maxlength: 100,
     },
@@ -13,7 +13,7 @@ const lostItemSchema = new mongoose.Schema(
     description: {
       type: String,
       required: true,
-      tim: true,
+      trim: true,
       minlength: 1,
       maxlength: 1000,
     },
@@ -29,7 +29,7 @@ const lostItemSchema = new mongoose.Schema(
     location: {
       type: String,
       required: true,
-      tim: true,
+      trim: true,
       minlength: 1,
       maxlength: 150,
     },
@@ -63,7 +63,7 @@ const lostItemSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: ["open", "closed"],
-      default: "open"
+      default: "open",
     },
   },
   {

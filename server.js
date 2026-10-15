@@ -1,18 +1,7 @@
-import express from "express";
 import { connectDB } from "./config/database.js";
+import app from "./app.js";
 
-const app = express();
-const PORT = process.env.PORT;
-
-app.get("/", (req, res) => {
-  res.send("Welcome to Lost n Found Main Page");
-});
-// send welcome message
-
-app.get("/lost-items", (req, res) => {
-  res.send("Lost Items Page")
-})
-// get lost items
+const PORT = process.env.PORT || 3000;
 
 try {
   await connectDB();
