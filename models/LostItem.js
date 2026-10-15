@@ -15,7 +15,7 @@ const lostItemSchema = new mongoose.Schema(
       required: true,
       tim: true,
       minlength: 1,
-      maxlength: 50,
+      maxlength: 1000,
     },
 
     category: {

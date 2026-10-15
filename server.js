@@ -2,7 +2,7 @@ import express from "express";
 import { connectDB } from "./config/database.js";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 app.get("/", (req, res) => {
   res.send("Welcome to Lost n Found Main Page");
