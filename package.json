@@ -1,7 +1,7 @@
 {
   "name": "cs326_project",
   "version": "1.0.0",
-  "description": "| Name | GitHub Username | |---|---| | Dat Quoc Pham | heoconngoc | | Jerry Chen | Jerry605185 |",
+  "description": "| Name | GitHub Username | | Dat Quoc Pham | heoconngoc | | Jerry Chen | Jerry605185 |",
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/heoconngoc/cs326_project#readme",
   "dependencies": {
+    "ejs": "^7.0.1",
     "express": "^5.2.1",
     "mongoose": "^9.11.2"
   }

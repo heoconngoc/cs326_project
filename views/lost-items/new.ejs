@@ -1,0 +1,75 @@
+<%- include('../partials/header') %>
+
+<div class="page-heading">
+  <h1>Report a Lost Item</h1>
+</div>
+
+<div id="form-error" class="alert alert-error" role="alert" hidden></div>
+
+<form id="lost-item-form" class="form" action="/api/lost-items" method="post">
+  <div class="field">
+    <label for="title">Title <span class="req">*</span></label>
+    <input id="title" name="title" type="text" required minlength="3" maxlength="100"
+           placeholder="e.g. Black badminton racket">
+    <small>3–100 characters</small>
+  </div>
+
+  <div class="field">
+    <label for="description">Description <span class="req">*</span></label>
+    <textarea id="description" name="description" rows="4" required maxlength="1000"
+              placeholder="Anything that helps identify it"></textarea>
+    <small>Up to 1000 characters</small>
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="category">Category <span class="req">*</span></label>
+      <input id="category" name="category" type="text" required maxlength="50"
+             list="category-options" placeholder="e.g. Sport">
+      <datalist id="category-options">
+        <% categories.forEach((c) => { %>
+          <option value="<%= c %>"></option>
+        <% }) %>
+      </datalist>
+    </div>
+
+    <div class="field">
+      <label for="dateLost">Date lost <span class="req">*</span></label>
+      <input id="dateLost" name="dateLost" type="date" required max="<%= today %>">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="location">Location <span class="req">*</span></label>
+    <input id="location" name="location" type="text" required maxlength="150"
+           placeholder="e.g. Franklin Dining Commons">
+  </div>
+
+  <div class="row">
+    <div class="field">
+      <label for="color">Color</label>
+      <input id="color" name="color" type="text" maxlength="50">
+    </div>
+
+    <div class="field">
+      <label for="brand">Brand</label>
+      <input id="brand" name="brand" type="text" maxlength="80">
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="contactInfo">Contact info</label>
+    <input id="contactInfo" name="contactInfo" type="text" maxlength="150"
+           placeholder="e.g. you@umass.edu">
+    <small>Stored for staff only. It is not shown on the public list.</small>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Submit</button>
+    <a class="btn btn-secondary" href="/lost-items">Cancel</a>
+  </div>
+</form>
+
+<script src="/js/lost-item-form.js" defer></script>
+
+<%- include('../partials/footer') %>
