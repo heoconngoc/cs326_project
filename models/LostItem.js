@@ -15,6 +15,14 @@ const lostItemSchema = new mongoose.Schema(
       required: true,
       trim: true,
       minlength: 1,
+      maxlength: 1000,
+    },
+
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
       maxlength: 50,
     },
 
@@ -61,7 +69,7 @@ const lostItemSchema = new mongoose.Schema(
   {
     timestamps: true,
     collection: "lostitems",
-  },
+  }
 );
 
 const LostItem = mongoose.model("LostItem", lostItemSchema);

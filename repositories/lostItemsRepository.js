@@ -5,5 +5,5 @@ export const insertLostItem = async (itemData) => {
 };
 
 export const findAllLostItems = async () => {
-  return await LostItem.find().sort({ createAt: -1 });
+  return await LostItem.find().sort({ createdAt: -1 });
 };
