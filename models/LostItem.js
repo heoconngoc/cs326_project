@@ -18,6 +18,14 @@ const lostItemSchema = new mongoose.Schema(
       maxlength: 50,
     },
 
+    category: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 50,
+    },
+
     location: {
       type: String,
       required: true,
