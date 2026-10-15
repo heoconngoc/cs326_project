@@ -2,17 +2,7 @@ import {
   createLostItem,
   getAllLostItems,
 } from "../services/lostItemsService.js";
-
-const CATEGORY_SUGGESTIONS = [
-  "Electronics",
-  "Wallet / ID",
-  "Keys",
-  "Clothing",
-  "Bag",
-  "Sport",
-  "Books / Notes",
-  "Other",
-];
+import { CATEGORY_SUGGESTIONS } from "../constants/categories.js";
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
