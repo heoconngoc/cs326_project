@@ -6,14 +6,15 @@ import {
   createLostItemApi,
   listLostItemsApi,
 } from "../controllers/lostItemsController.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
 export const pageRouter = Router();
 
 pageRouter.get("/", showHomePage);
-pageRouter.get("/lost-items", showLostItemsPage);
+pageRouter.get("/lost-items", asyncHandler(showLostItemsPage));
 pageRouter.get("/lost-items/new", showNewLostItemForm);
 
 export const apiRouter = Router();
 
-apiRouter.get("/", listLostItemsApi);
-apiRouter.post("/", createLostItemApi);
+apiRouter.get("/", asyncHandler(listLostItemsApi));
+apiRouter.post("/", asyncHandler(createLostItemApi));
