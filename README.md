@@ -60,15 +60,7 @@ file from the template and adjust it to your MongoDB server:
 cp .env.example .env
 ```
 
-Then edit `.env`, for example:
-
-```
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/cs326
-```
-
-`.env` is ignored by git, so each developer keeps their own copy. The `npm start`
-script loads it automatically with Node's `--env-file` flag.
+The `npm start` script loads it automatically with Node's `--env-file` flag.
 
 ### Start the server
 
