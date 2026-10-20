@@ -24,7 +24,7 @@ We will be working on developing a lost and found system that benefits those who
 
 Make sure you have the following installed:
 
-- Node.js and npm — download from <https://nodejs.org/en/download>
+- Node.js 20.6.0 or later and npm — download from <https://nodejs.org/en/download>
 - A MongoDB server that is running (a local install or Docker)
 
 To verify that Node.js and npm are installed, run:
@@ -53,22 +53,27 @@ npm install
 
 ### Configure the environment
 
-The server reads `PORT` and `MONGODB_URI` from the environment. Create a `.env`
-file from the template and adjust it to your MongoDB server:
+The server reads `PORT` and `MONGODB_URI` from the environment. Create a `.env` file from the template `.env.example`:
 
 ```bash
 cp .env.example .env
 ```
 
-Then edit `.env`, for example:
+Update `MONGODB_URI` in `.env` to match your MongoDB setup:
 
-```
-PORT=3000
-MONGODB_URI=mongodb://localhost:27017/cs326
+**Local MongoDB without authentication:**
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017/devdb
 ```
 
-`.env` is ignored by git, so each developer keeps their own copy. The `npm start`
-script loads it automatically with Node's `--env-file` flag.
+**Local MongoDB with authentication:**
+```env
+MONGODB_URI=mongodb://username:password@127.0.0.1:27017/devdb?authSource=admin
+```
+
+Replace `username` and `password` with your actual credentials. The `.env.example` template assumes an authenticated MongoDB instance, so developers using MongoDB without authentication must update the URI.
+
+The `npm start` script automatically loads `.env` using Node's `--env-file` flag in `package.json`. Keep `.env` uncommitted because it may contain sensitive credentials. The `.gitignore` file already excludes .env from version control.
 
 ### Start the server
 
@@ -92,6 +97,19 @@ Listening on http://localhost:3000
 | Home page          | http://localhost:3000                |
 | Lost items list    | http://localhost:3000/lost-items     |
 | Report a lost item | http://localhost:3000/lost-items/new |
+
+### Troubleshooting
+
+If the server fails to start or MongoDB connection fails:
+
+1. Verify that your MongoDB server is running.
+2. Check that `MONGODB_URI` in `.env` matches your MongoDB host, port, database, and authentication settings.
+3. If using authentication, verify the username, password, and `authSource`.
+4. Restart the application with `npm start` after updating `.env`.
+
+The application connects to MongoDB before starting the HTTP server, so a failed database connection prevents the website from becoming available.
+
+To verify a successful setup, open the home page at `http://localhost:3000` and the lost-items page at `http://localhost:3000/lost-items`.
 
 ## Feature: Report a Lost Item
 
