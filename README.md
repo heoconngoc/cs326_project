@@ -210,9 +210,11 @@ repository → MongoDB`, and the controller returns JSON.
 
 One design decision I made in Sprint 2 was to create a `docs/sprint-2-contract.md` file before we began implementing the feature. This document defines the technology stack, data model, API endpoints, shared interfaces, error handling, and team responsibilities.
 
-Another option was to have each team member start coding independently and discuss details as needed during that process. While that approach might allow us to start programming earlier, it could also cause inconsistencies between our implementations and require additional changes, debugging when integrating our work.
+An alternative was to let each team member start coding independently and resolve interface differences during integration. Although this would have allowed us to start coding sooner, it could have introduced inconsistencies and required additional debugging and rework.
 
-By agreeing on a technical contract beforehand, we could work on different parts of the project with a shared understanding of how everything should fit together. Although writing this document initially took a little extra time, It truly helped to make our collaboration more organized and minimized integration issues.
+For example, we agreed that the dateLost field would use the YYYY-MM-DD format in API requests and responses, while the backend would store it as a Mongoose Date. Since Jerry was working on the frontend and I was implementing the backend validation and database layers, this agreement gave us a consistent data format to follow. Without it, the frontend might have sent a different date format than the backend expected, requiring us to change the form submission logic or validation code during integration.
+
+Writing the contract took some additional time upfront, but it helped us coordinate our work, clarify responsibilities, and reduce the risk of integration issues.
 
 **Jerry Chen (@Jerry605185):**
 
