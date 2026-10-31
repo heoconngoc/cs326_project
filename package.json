@@ -4,7 +4,10 @@
   "description": "| Name | GitHub Username | | Dat Quoc Pham | heoconngoc | | Jerry Chen | Jerry605185 |",
   "main": "index.js",
   "scripts": {
+    "prestart": "npm run build:css",
     "start": "node --env-file=.env server.js",
+    "build:css": "tailwindcss -i ./src/input.css -o ./public/css/tailwind.css --minify",
+    "dev:css": "tailwindcss -i ./src/input.css -o ./public/css/tailwind.css --watch",
     "test": "node --experimental-vm-modules node_modules/.bin/jest"
   },
   "repository": {
@@ -22,9 +25,12 @@
   "dependencies": {
     "ejs": "^7.0.1",
     "express": "^5.2.1",
+    "htmx.org": "^2.0.11",
     "mongoose": "^9.11.2"
   },
   "devDependencies": {
-    "jest": "^30.5.2"
+    "@tailwindcss/cli": "^4.3.3",
+    "jest": "^30.5.2",
+    "tailwindcss": "^4.3.3"
   }
 }

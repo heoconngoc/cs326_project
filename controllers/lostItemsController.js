@@ -30,7 +30,6 @@ export const showLostItemsPage = async (req, res) => {
     title: "Lost Items",
     active: "lost-items",
     items: items.map(toPublicItem),
-    created: req.query.created === "1",
   });
 };
 
@@ -41,6 +40,20 @@ export const showNewLostItemForm = (req, res) => {
     categories: CATEGORY_SUGGESTIONS,
     today: todayISO(),
   });
+};
+
+export const submitLostItemForm = async (req, res) => {
+  const result = await createLostItem(req.body);
+
+  if (!result.ok) {
+    return res
+      .status(400)
+      .render("fragments/form-error", { message: result.error });
+  }
+
+  res
+    .status(201)
+    .render("fragments/form-success", { item: toPublicItem(result.value) });
 };
 
 export const createLostItemApi = async (req, res) => {

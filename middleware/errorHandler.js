@@ -2,9 +2,15 @@ const wantsJson = (req) =>
   req.originalUrl.startsWith("/api/") ||
   req.accepts(["html", "json"]) === "json";
 
+const isHtmxRequest = (req) => req.get("HX-Request") === "true";
+
 // When no route matched.
 export const notFoundHandler = (req, res) => {
   res.status(404);
+
+  if (isHtmxRequest(req)) {
+    return res.render("fragments/form-error", { message: "Not found" });
+  }
 
   if (wantsJson(req)) {
     return res.json({ success: false, error: "Not found" });
@@ -37,6 +43,10 @@ export const errorHandler = (err, req, res, next) => {
     : "Something went wrong";
 
   res.status(status);
+
+  if (isHtmxRequest(req)) {
+    return res.render("fragments/form-error", { message });
+  }
 
   if (wantsJson(req)) {
     return res.json({ success: false, error: message });

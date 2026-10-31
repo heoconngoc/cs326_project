@@ -1,19 +1,29 @@
+<%
+  const navLink = (name) => active === name
+    ? 'bg-red-50 text-red-900'
+    : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900';
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> · Lost n Found</title>
-  <link rel="stylesheet" href="/css/styles.css">
+  <link rel="stylesheet" href="/css/tailwind.css">
+  <% if (typeof useHtmx !== 'undefined' && useHtmx) { %>
+    <%# Swap 4xx/5xx responses too, so the server's error fragment is shown. %>
+    <meta name="htmx-config" content='{"timeout":15000,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}'>
+    <script src="/vendor/htmx/htmx.min.js" defer></script>
+  <% } %>
 </head>
-<body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <a class="brand" href="/">Lost n Found</a>
-      <nav class="nav">
-        <a href="/lost-items" class="<%= active === 'lost-items' ? 'active' : '' %>">Lost Items</a>
-        <a href="/lost-items/new" class="<%= active === 'new' ? 'active' : '' %>">Report an Item</a>
+<body class="flex min-h-screen flex-col bg-stone-50 text-stone-900 antialiased">
+  <header class="border-b border-stone-200 bg-white">
+    <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <a href="/" class="text-lg font-bold tracking-tight text-red-900">Lost n Found</a>
+      <nav class="-mx-2 flex gap-1 text-sm font-medium sm:mx-0" aria-label="Main">
+        <a href="/lost-items" class="rounded-md px-3 py-2 <%= navLink('lost-items') %>">Lost Items</a>
+        <a href="/lost-items/new" class="rounded-md px-3 py-2 <%= navLink('new') %>">Report an Item</a>
       </nav>
     </div>
   </header>
-  <main class="container">
+  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-10">
