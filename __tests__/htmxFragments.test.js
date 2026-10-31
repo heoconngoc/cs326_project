@@ -1,6 +1,5 @@
 import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
 import request from "supertest";
-import app from "../app.js";
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
 
