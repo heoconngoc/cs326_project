@@ -90,6 +90,17 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(html).not.toContain("private@umass.edu");
   });
 
+  test("400: answers with a fragment containing the validation message", async () => {
+    mockCreateLostItem.mockResolvedValue(Err("title is required"));
+
+    const res = await submitForm({ title: "" });
+    const html = await res.text();
+
+    expect(res.status).toBe(400);
+    expect(isFragment(html)).toBe(true);
+    expect(html).toContain("Title is required");
+  });
+
   test("should return a 404 fragment for unknown HTMX routes", async () => {
     const res = await request(app)
       .get("/api/some-unknown-route")
@@ -98,21 +109,6 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(res.status).toBe(404);
     expect(isFragment(res.text)).toBe(true);
     expect(res.text).toContain("Not found");
-  });
-
-  test("should return a 404 fragment for unknown HTMX routes", async () => {
-    const res = await fetch("http://localhost:3000/api/some-unknown-route", {
-      method: "GET",
-      headers: {
-        "HX-Request": "true",
-      },
-    });
-
-    const html = await res.text();
-
-    expect(res.status).toBe(404);
-    expect(isFragment(html)).toBe(true);
-    expect(html).toContain("Not found");
   });
 
   test("500: answers with a fragment and does not leak error details", async () => {
@@ -130,16 +126,6 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(html).not.toContain("hunter2");
 
     consoleError.mockRestore();
-  });
-
-  test("an HTMX request to an unknown route gets a 404 fragment", async () => {
-    const res = await fetch(`${base}/nope`, {
-      headers: { "HX-Request": "true" },
-    });
-    const html = await res.text();
-
-    expect(res.status).toBe(404);
-    expect(isFragment(html)).toBe(true);
   });
 });
 
