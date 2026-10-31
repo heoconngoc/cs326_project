@@ -1,6 +1,9 @@
 import {
   createLostItem,
   getAllLostItems,
+  getLostItemById,
+  updateLostItem,
+  deleteLostItem,
 } from "../services/lostItemsService.js";
 import { CATEGORY_SUGGESTIONS } from "../constants/categories.js";
 
@@ -18,6 +21,15 @@ const toPublicItem = (item) => ({
   status: item.status,
   createdAt: item.createdAt.toISOString(),
 });
+
+const resultStatus = (error) =>
+  error === "Item not found" ? 404 : 400;
+
+const sendResultError = (res, result) =>
+  res.status(resultStatus(result.error)).json({
+    success: false,
+    error: result.error,
+  });
 
 export const showHomePage = (req, res) => {
   res.render("index", { title: "Home", active: "home" });
@@ -57,4 +69,67 @@ export const listLostItemsApi = async (req, res) => {
   const items = await getAllLostItems();
 
   res.status(200).json({ success: true, data: items.map(toPublicItem) });
+};
+
+
+export const getLostItemApi = async (req, res) => {
+  const result = await getLostItemById(req.params.id);
+
+  if (!result.ok) {
+    return sendResultError(res, result);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: toPublicItem(result.value),
+  });
+};
+
+export const updateLostItemApi = async (req, res) => {
+  const result = await updateLostItem(req.params.id, req.body);
+
+  if (!result.ok) {
+    return sendResultError(res, result);
+  }
+
+  res.status(200).json({
+    success: true,
+    data: toPublicItem(result.value),
+  });
+};
+
+export const deleteLostItemApi = async (req, res) => {
+  const result = await deleteLostItem(req.params.id);
+
+  if (!result.ok) {
+    return sendResultError(res, result);
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Item deleted successfully",
+  });
+};
+
+export const showLostItemDetails = async (req, res) => {
+  const result = await getLostItemById(req.params.id);
+
+  if (!result.ok) {
+    const status = resultStatus(result.error);
+
+    return res.status(status).render("error", {
+      title: "Error",
+      active: "",
+      status,
+      message: result.error,
+    });
+  }
+
+  res.render("lost-items/show", {
+    title: "Item Details",
+    active: "lost-items",
+    item: toPublicItem(result.value),
+    today: todayISO(),
+    categories: CATEGORY_SUGGESTIONS,
+  });
 };
