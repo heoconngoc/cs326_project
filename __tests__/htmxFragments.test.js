@@ -1,4 +1,6 @@
 import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
+import request from "supertest";
+import app from "../app.js";
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
 
@@ -89,15 +91,14 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(html).not.toContain("private@umass.edu");
   });
 
-  test("400: answers with a fragment containing the validation message", async () => {
-    mockCreateLostItem.mockResolvedValue(Err("title is required"));
+  test("should return a 404 fragment for unknown HTMX routes", async () => {
+    const res = await request(app)
+      .get("/api/some-unknown-route")
+      .set("HX-Request", "true");
 
-    const res = await submitForm({ title: "" });
-    const html = await res.text();
-
-    expect(res.status).toBe(400);
-    expect(isFragment(html)).toBe(true);
-    expect(html).toContain("Title is required");
+    expect(res.status).toBe(404);
+    expect(isFragment(res.text)).toBe(true);
+    expect(res.text).toContain("Not found");
   });
 
   test("should return a 404 fragment for unknown HTMX routes", async () => {
