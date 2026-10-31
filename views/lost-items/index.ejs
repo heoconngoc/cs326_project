@@ -1,38 +1,19 @@
 <%- include('../partials/header') %>
 
-<div class="page-heading">
-  <h1>Lost Items</h1>
-  <a class="btn btn-primary" href="/lost-items/new">Report a lost item</a>
+<div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+  <h1 class="text-2xl font-bold tracking-tight">Lost Items</h1>
+  <a class="rounded-lg bg-red-900 px-4 py-2.5 text-center font-semibold text-white shadow-sm hover:bg-red-950" href="/lost-items/new">Report a lost item</a>
 </div>
 
-<% if (created) { %>
-  <div class="alert alert-success" role="status">
-    Your lost item was submitted successfully.
-  </div>
-<% } %>
-
 <% if (items.length === 0) { %>
-  <div class="empty-state">
+  <div class="rounded-xl border border-dashed border-stone-300 bg-white px-4 py-12 text-center text-stone-600">
     <p>No lost items have been reported yet.</p>
-    <a href="/lost-items/new">Be the first to report one</a>
+    <a class="mt-2 inline-block font-medium text-red-900 underline" href="/lost-items/new">Be the first to report one</a>
   </div>
 <% } else { %>
-  <ul class="item-grid">
+  <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
     <% items.forEach((item) => { %>
-      <li class="card">
-        <div class="card-top">
-          <h2><%= item.title %></h2>
-          <span class="badge badge-<%= item.status %>"><%= item.status %></span>
-        </div>
-        <p class="card-desc"><%= item.description %></p>
-        <dl class="card-meta">
-          <dt>Category</dt><dd><%= item.category %></dd>
-          <dt>Location</dt><dd><%= item.location %></dd>
-          <dt>Date lost</dt><dd><%= item.dateLost %></dd>
-          <% if (item.color) { %><dt>Color</dt><dd><%= item.color %></dd><% } %>
-          <% if (item.brand) { %><dt>Brand</dt><dd><%= item.brand %></dd><% } %>
-        </dl>
-      </li>
+      <li class="flex min-w-0"><%- include('../fragments/item-card', { item }) %></li>
     <% }) %>
   </ul>
 <% } %>

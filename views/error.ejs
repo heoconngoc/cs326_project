@@ -1,10 +1,10 @@
 <%- include('partials/header') %>
 
-<section class="hero">
-  <p class="error-code"><%= status %></p>
-  <h1><%= message %></h1>
-  <div class="hero-actions">
-    <a class="btn btn-primary" href="/">Back to home</a>
+<section class="mx-auto max-w-xl py-8 text-center sm:py-16">
+  <p class="text-6xl font-extrabold text-red-900"><%= status %></p>
+  <h1 class="mt-4 text-2xl font-bold tracking-tight"><%= message %></h1>
+  <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+    <a class="rounded-lg bg-red-900 px-5 py-3 text-center font-semibold text-white shadow-sm hover:bg-red-950" href="/">Back to home</a>
   </div>
 </section>
 
