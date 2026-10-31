@@ -25,7 +25,17 @@ const savedItem = {
   createdAt: new Date("2026-10-14T18:00:00.000Z"),
 };
 
-const isFragment = (html) => !/<html|<head|<body|<!doctype/i.test(html);
+const isFragment = (html) => {
+  if (!html || typeof html !== "string" || html.trim() === "") {
+    return false;
+  }
+
+  if (/<html|<head|<body|<!doctype/i.test(html)) {
+    return false;
+  }
+
+  return /<[a-z][\s\S]*>/i.test(html);
+};
 
 let server;
 let base;
@@ -89,6 +99,16 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(res.status).toBe(400);
     expect(isFragment(html)).toBe(true);
     expect(html).toContain("Title is required");
+  });
+
+  it("should return a 404 fragment for unknown HTMX routes", async () => {
+    const res = await request(app)
+      .get("/api/some-unknown-route")
+      .set("HX-Request", "true");
+
+    expect(res.status).toBe(404);
+    expect(isFragment(res.text)).toBe(true);
+    expect(res.text).toContain("Not found");
   });
 
   test("500: answers with a fragment and does not leak error details", async () => {

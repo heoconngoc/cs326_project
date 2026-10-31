@@ -15,7 +15,13 @@
     <dt class="text-stone-500">Location</dt>
     <dd class="min-w-0 break-words"><%= item.location %></dd>
     <dt class="text-stone-500">Date lost</dt>
-    <dd><%= item.dateLost %></dd>
+    <dd>
+  <%= new Date(item.dateLost+ 'T00:00:00').toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+  }) %>
+</dd>
     <% if (item.color) { %>
       <dt class="text-stone-500">Color</dt>
       <dd class="min-w-0 break-words"><%= item.color %></dd>
