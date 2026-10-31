@@ -1,5 +1,4 @@
 import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
-import request from "supertest";
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
 
@@ -101,14 +100,19 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(html).toContain("Title is required");
   });
 
-  it("should return a 404 fragment for unknown HTMX routes", async () => {
-    const res = await request(app)
-      .get("/api/some-unknown-route")
-      .set("HX-Request", "true");
+  test("should return a 404 fragment for unknown HTMX routes", async () => {
+    const res = await fetch("http://localhost:3000/api/some-unknown-route", {
+      method: "GET",
+      headers: {
+        "HX-Request": "true",
+      },
+    });
+
+    const html = await res.text();
 
     expect(res.status).toBe(404);
-    expect(isFragment(res.text)).toBe(true);
-    expect(res.text).toContain("Not found");
+    expect(isFragment(html)).toBe(true);
+    expect(html).toContain("Not found");
   });
 
   test("500: answers with a fragment and does not leak error details", async () => {
