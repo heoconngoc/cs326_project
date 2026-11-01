@@ -1,6 +1,4 @@
-
 import { Router } from "express";
-
 import {
   showHomePage,
   showLostItemsPage,
@@ -12,7 +10,6 @@ import {
   updateLostItemApi,
   deleteLostItemApi,
 } from "../controllers/lostItemsController.js";
-
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
 export const pageRouter = Router();
