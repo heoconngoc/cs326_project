@@ -1,14 +1,14 @@
 <%- include('partials/header') %>
 
-<section class="hero">
-  <h1>Lost something on campus?</h1>
-  <p>
+<section class="mx-auto max-w-2xl py-6 text-center sm:py-16">
+  <h1 class="text-3xl font-bold tracking-tight sm:text-5xl">Lost something on campus?</h1>
+  <p class="mt-4 text-lg text-stone-600">
     Check online whether your item has been found, or report a lost item with
     a description so others can help you find it.
   </p>
-  <div class="hero-actions">
-    <a class="btn btn-primary" href="/lost-items/new">Report a lost item</a>
-    <a class="btn btn-secondary" href="/lost-items">Browse lost items</a>
+  <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+    <a class="rounded-lg bg-red-900 px-5 py-3 text-center font-semibold text-white shadow-sm hover:bg-red-950" href="/lost-items/new">Report a lost item</a>
+    <a class="rounded-lg border border-stone-300 bg-white px-5 py-3 text-center font-semibold text-stone-800 hover:bg-stone-100" href="/lost-items">Browse lost items</a>
   </div>
 </section>
 

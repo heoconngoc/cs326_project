@@ -1,10 +1,9 @@
-
 import { Router } from "express";
 import {
   showHomePage,
   showLostItemsPage,
   showNewLostItemForm,
-  showLostItemDetails,
+  submitLostItemForm,
   createLostItemApi,
   listLostItemsApi,
   getLostItemApi,
@@ -18,7 +17,8 @@ export const pageRouter = Router();
 pageRouter.get("/", showHomePage);
 pageRouter.get("/lost-items", asyncHandler(showLostItemsPage));
 pageRouter.get("/lost-items/new", showNewLostItemForm);
-pageRouter.get("/lost-items/:id", asyncHandler(showLostItemDetails));
+
+pageRouter.post("/lost-items", asyncHandler(submitLostItemForm));
 
 export const apiRouter = Router();
 
