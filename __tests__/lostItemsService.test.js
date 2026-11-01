@@ -2,13 +2,26 @@ import { jest, beforeEach } from "@jest/globals";
 
 const mockInsertLostItem = jest.fn();
 const mockFindAllLostItems = jest.fn();
+const mockFindLostItemById = jest.fn();
+const mockUpdateLostItemById = jest.fn();
+const mockRemoveLostItemById = jest.fn();
 
 jest.unstable_mockModule("../repositories/lostItemsRepository.js", () => ({
   insertLostItem: mockInsertLostItem,
   findAllLostItems: mockFindAllLostItems,
+  findLostItemById: mockFindLostItemById,
+  updateLostItemById: mockUpdateLostItemById,
+  removeLostItemById: mockRemoveLostItemById,
 }));
 
-const { createLostItem, getAllLostItems } = await import("../services/lostItemsService.js");
+const {
+  createLostItem,
+  getAllLostItems,
+  getLostItemById,
+  updateLostItem,
+  deleteLostItem,
+} = await import("../services/lostItemsService.js");
+
 
 const input = {
   title: "Lost Badminton Racket",
@@ -27,6 +40,9 @@ beforeEach(() => {
   }));
 
   mockFindAllLostItems.mockResolvedValue([]);
+  mockFindLostItemById.mockResolvedValue(null);
+  mockUpdateLostItemById.mockResolvedValue(null);
+  mockRemoveLostItemById.mockResolvedValue(null);
 });
 
 describe("Input validation", () => {
@@ -103,10 +119,9 @@ describe("Required field length limits", () => {
     ["location", 1, 150],
   ];
 
-  test.each(limits)(
+  test.each(limits.filter(([, min]) => min > 1))(
     "rejects %s below minimum length",
     async (field, min, max) => {
-      if (min === 1) return; // Empty strings are tested separately.
 
       const result = await createLostItem({
         ...input,
@@ -276,7 +291,6 @@ describe("Optional fields", () => {
   );
 });
 
-
 describe("Service behavior", () => {
   test("trims required and optional strings", async () => {
     const result = await createLostItem({
@@ -359,6 +373,216 @@ describe("Service behavior", () => {
     mockFindAllLostItems.mockRejectedValue(new Error("Database unavailable"));
 
     await expect(getAllLostItems()).rejects.toThrow(
+      "Database unavailable"
+    );
+  });
+});
+
+const validId = "507f1f77bcf86cd799439011";
+
+const existingItem = {
+  _id: validId,
+  ...input,
+  dateLost: new Date("2026-10-12T00:00:00.000Z"),
+  color: "Black",
+  brand: "Yonex",
+  contactInfo: "private@example.com",
+  status: "open",
+};
+
+describe("Get by ID", () => {
+  test("rejects invalid ID", async () => {
+    const result = await getLostItemById("invalid");
+
+    expect(result.error).toBe("Invalid item ID");
+    expect(mockFindLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("returns not found", async () => {
+    const result = await getLostItemById(validId);
+
+    expect(result.error).toBe("Item not found");
+  });
+
+  test("returns existing item", async () => {
+    mockFindLostItemById.mockResolvedValue(existingItem);
+
+    const result = await getLostItemById(validId);
+
+    expect(result).toEqual({
+      ok: true,
+      value: existingItem,
+    });
+    expect(mockFindLostItemById).toHaveBeenCalledWith(validId);
+  });
+
+  test("propagates repository errors", async () => {
+    mockFindLostItemById.mockRejectedValue(
+      new Error("Database unavailable")
+    );
+
+    await expect(getLostItemById(validId)).rejects.toThrow(
+      "Database unavailable"
+    );
+  });
+});
+
+describe("Update by ID", () => {
+  beforeEach(() => {
+    mockFindLostItemById.mockResolvedValue(existingItem);
+    mockUpdateLostItemById.mockResolvedValue(existingItem);
+  });
+
+  test("rejects invalid ID", async () => {
+    const result = await updateLostItem("invalid", {
+      location: "Library",
+    });
+
+    expect(result.error).toBe("Invalid item ID");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test.each([null, [], "invalid", 123])(
+    "rejects invalid update data: %p",
+    async (updates) => {
+      const result = await updateLostItem(validId, updates);
+
+      expect(result.error).toBe("Invalid update data");
+      expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+    }
+  );
+
+  test("rejects empty updates", async () => {
+    const result = await updateLostItem(validId, {});
+
+    expect(result.error).toBe("Invalid update fields");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test.each(["_id", "status", "contactInfo", "createdAt"])(
+    "rejects protected field %s",
+    async (field) => {
+      const result = await updateLostItem(validId, {
+        [field]: "malicious",
+      });
+
+      expect(result.error).toBe("Invalid update fields");
+      expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+    }
+  );
+
+  test("returns not found", async () => {
+    mockFindLostItemById.mockResolvedValue(null);
+
+    const result = await updateLostItem(validId, {
+      location: "Library",
+    });
+
+    expect(result.error).toBe("Item not found");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [{ title: "" }, "title is required"],
+    [{ title: "ab" }, "title must be between 3 and 100 characters"],
+    [{ color: 123 }, "color must be a string"],
+    [{ dateLost: "invalid" }, "dateLost must be a valid date in YYYY-MM-DD format"],
+  ])("rejects invalid field values", async (updates, error) => {
+    const result = await updateLostItem(validId, updates);
+
+    expect(result.error).toBe(error);
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("updates only supplied fields", async () => {
+    const updated = {
+      ...existingItem,
+      location: "Student Union",
+    };
+
+    mockUpdateLostItemById.mockResolvedValue(updated);
+
+    const result = await updateLostItem(validId, {
+      location: "  Student Union  ",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      value: updated,
+    });
+
+    expect(mockUpdateLostItemById).toHaveBeenCalledWith(
+      validId,
+      { location: "Student Union" }
+    );
+  });
+
+  test("handles item deleted during update", async () => {
+    mockUpdateLostItemById.mockResolvedValue(null);
+
+    const result = await updateLostItem(validId, {
+      location: "Library",
+    });
+
+    expect(result.error).toBe("Item not found");
+  });
+
+  test("propagates repository errors", async () => {
+    mockUpdateLostItemById.mockRejectedValue(
+      new Error("Database unavailable")
+    );
+
+    await expect(
+      updateLostItem(validId, { location: "Library" })
+    ).rejects.toThrow("Database unavailable");
+  });
+
+  test("rejects future date update", async () => {
+    const future = new Date();
+    future.setUTCDate(future.getUTCDate() + 2);
+
+    const result = await updateLostItem(validId, {
+      dateLost: future.toISOString().slice(0, 10),
+    });
+
+    expect(result.error).toBe("dateLost cannot be in the future");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+});
+
+describe("Delete by ID", () => {
+  test("rejects invalid ID", async () => {
+    const result = await deleteLostItem("invalid");
+
+    expect(result.error).toBe("Invalid item ID");
+    expect(mockRemoveLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("returns not found", async () => {
+    const result = await deleteLostItem(validId);
+
+    expect(result.error).toBe("Item not found");
+  });
+
+  test("deletes an existing item", async () => {
+    mockRemoveLostItemById.mockResolvedValue(existingItem);
+
+    const result = await deleteLostItem(validId);
+
+    expect(result).toEqual({
+      ok: true,
+      value: existingItem,
+    });
+
+    expect(mockRemoveLostItemById).toHaveBeenCalledWith(validId);
+  });
+
+  test("propagates repository errors", async () => {
+    mockRemoveLostItemById.mockRejectedValue(
+      new Error("Database unavailable")
+    );
+
+    await expect(deleteLostItem(validId)).rejects.toThrow(
       "Database unavailable"
     );
   });

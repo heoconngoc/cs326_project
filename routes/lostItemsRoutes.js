@@ -6,6 +6,9 @@ import {
   submitLostItemForm,
   createLostItemApi,
   listLostItemsApi,
+  getLostItemApi,
+  updateLostItemApi,
+  deleteLostItemApi,
 } from "../controllers/lostItemsController.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 
@@ -20,3 +23,6 @@ export const apiRouter = Router();
 
 apiRouter.get("/", asyncHandler(listLostItemsApi));
 apiRouter.post("/", asyncHandler(createLostItemApi));
+apiRouter.get("/:id", asyncHandler(getLostItemApi));
+apiRouter.patch("/:id", asyncHandler(updateLostItemApi));
+apiRouter.delete("/:id", asyncHandler(deleteLostItemApi));
