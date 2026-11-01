@@ -51,6 +51,16 @@ Install the project dependencies with:
 npm install
 ```
 
+### Build the CSS
+
+The pages are styled with Tailwind CSS. `src/input.css` is compiled into `public/css/tailwind.css`, which is generated and not committed. `npm start` builds it automatically, so no extra step is needed. To build it by hand, run:
+
+```bash
+npm run build:css
+```
+
+While editing the views, `npm run dev:css` rebuilds the CSS every time a file changes.
+
 ### Configure the environment
 
 The server reads `PORT` and `MONGODB_URI` from the environment. Create a `.env` file from the template `.env.example`:
@@ -125,13 +135,15 @@ Someone who lost an item can report it through a browser form. The report is val
 
    Optional fields are **color**, **brand**, and **contact info**.
 
-3. Click **Submit**. The browser sends the form as a JSON
-   `POST /api/lost-items` request.
-4. On success, the server saves the item to MongoDB and redirects the browser to
-   `/lost-items?created=1`, where a success banner is shown and the new item
-   appears at the top of the list.
-5. If validation fails, the server responds with `400` and a message, and the
-   form displays it inline — nothing is saved.
+3. Click **Submit**. The form is sent by HTMX (`hx-post`) as `POST /lost-items`.
+   The page does not reload and the address bar does not change.
+4. On success, the server saves the item to MongoDB and answers with an HTML
+   fragment: a confirmation and the new item. HTMX swaps it into the area under
+   the form, and the form is cleared. The item also appears at the top of
+   `/lost-items`.
+5. If validation fails, the server answers with `400` and a fragment containing
+   the message. It appears under the form, what you typed stays in the fields,
+   and nothing is saved.
 6. `contact info` is stored for staff but is never returned by the public API. We are still thinking about how we should display the `contact info` regarding the personal privacy.
 
 ## API Endpoints
@@ -141,6 +153,7 @@ Someone who lost an item can report it through a browser form. The report is val
 | GET    | `/`               | Home page                        | 200 HTML |
 | GET    | `/lost-items`     | Lost items list, newest first    | 200 HTML |
 | GET    | `/lost-items/new` | Report-a-lost-item form          | 200 HTML |
+| POST   | `/lost-items`     | Form submit from HTMX; answers with an HTML fragment (no `<html>`) | 201 or 400 HTML fragment |
 | GET    | `/api/lost-items` | List items as JSON, newest first | 200 JSON |
 | POST   | `/api/lost-items` | Create a lost item               | 201 JSON |
 
@@ -159,7 +172,7 @@ The app uses a Routes → Controller → Service → Repository layering.
 ```
 Browser
   |
-  | POST /api/lost-items (JSON)
+  | POST /lost-items (form submit by HTMX; HTML fragment comes back)
   v
 app.js
 (Express app: static files, JSON/urlencoded
@@ -199,10 +212,43 @@ MongoDB
 - A page load (e.g. `GET /lost-items`) flows
   `Browser → app.js → pageRouter → controller → service → repository → MongoDB`,
   then the controller renders an EJS view and returns HTML.
-- A form submit flows `Browser → app.js → apiRouter → controller → service →
-repository → MongoDB`, and the controller returns JSON.
+- A form submit flows `Browser (htmx) → app.js → pageRouter → controller →
+service → repository → MongoDB`, and the controller renders a small EJS
+fragment from `views/fragments/` that htmx swaps into the page.
+- The JSON API (`POST /api/lost-items`) takes the same path through `apiRouter`
+and the controller returns JSON instead.
 - If any layer throws, the wrapped async handler forwards the error to the
   error-handling middleware in `middleware/errorHandler.js`.
+
+## Sprint 3: HTMX and Tailwind
+
+**HTMX interaction: submitting the report form.** `views/lost-items/new.ejs` loads htmx (installed from npm and served at `/vendor/htmx/htmx.min.js`). The `<form>` has `hx-post="/lost-items"`, `hx-target="#form-feedback"` and `hx-swap`. The route answers with a fragment from `views/fragments/` (`form-success.ejs` or `form-error.ejs`), never a full page or JSON.
+
+To check it:
+
+1. Start the app, open http://localhost:3000/lost-items/new, and open the browser's Network tab.
+2. Fill in the form and click **Submit**. One `POST /lost-items` request appears, the address bar stays the same, and only the area under the form changes.
+3. From a terminal, ask for the fragment directly (this saves a real item):
+
+```bash
+curl -s -H 'HX-Request: true' \
+  --data-urlencode 'title=Green umbrella' \
+  --data-urlencode 'description=Left in room 101' \
+  --data-urlencode 'category=Other' \
+  --data-urlencode 'location=Library' \
+  --data-urlencode 'dateLost=2026-10-12' \
+  http://localhost:3000/lost-items
+```
+
+The output starts with a `<div role="status"` confirmation and has no `<html>`, `<head>` or `<body>`. Leave out `title` to see the `400` error fragment instead.
+
+**Tailwind CSS.** Styles are utility classes in the EJS views. `src/input.css` is the Tailwind entry point and `npm run build:css` compiles it (see "Build the CSS"). To check the responsive layout, open the pages in the browser's device toolbar at 375 px and at 1280 px wide:
+
+| Part | 375 px (phone) | 1280 px (desktop) |
+| ---- | -------------- | ----------------- |
+| Header | Navigation sits under the logo | Logo and navigation on one row |
+| Report form | One column of fields; buttons stacked and full width | Centered card; Category/Date and Color/Brand side by side |
+| Lost items list | One column of cards | Three columns of cards |
 
 ## Design Decisions
 
