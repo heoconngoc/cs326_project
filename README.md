@@ -63,27 +63,23 @@ While editing the views, `npm run dev:css` rebuilds the CSS every time a file ch
 
 ### Configure the environment
 
-The server reads `PORT` and `MONGODB_URI` from the environment. Create a `.env` file from the template `.env.example`:
+Create `.env` from the template:
 
 ```bash
 cp .env.example .env
 ```
 
-Update `MONGODB_URI` in `.env` to match your MongoDB setup:
+The template uses the dev container's MongoDB service:
 
-**Local MongoDB without authentication:**
 ```env
-MONGODB_URI=mongodb://127.0.0.1:27017/devdb
+MONGODB_URI=mongodb://dev:devpassword@mongo:27017/devdb?authSource=admin
 ```
 
-**Local MongoDB with authentication:**
-```env
-MONGODB_URI=mongodb://username:password@127.0.0.1:27017/devdb?authSource=admin
-```
+- **Inside the dev container:** keep `mongo` as the host.
+- **Running outside the dev container:** use `localhost` instead of `mongo`.
+- **MongoDB without authentication:** `mongodb://127.0.0.1:27017/devdb`.
 
-Replace `username` and `password` with your actual credentials. The `.env.example` template assumes an authenticated MongoDB instance, so developers using MongoDB without authentication must update the URI.
-
-The `npm start` script automatically loads `.env` using Node's `--env-file` flag in `package.json`. Keep `.env` uncommitted because it may contain sensitive credentials. The `.gitignore` file already excludes .env from version control.
+`npm start` loads `.env` automatically. Do not commit `.env`.
 
 ### Start the server
 
@@ -165,6 +161,19 @@ curl -X POST http://localhost:3000/api/lost-items \
   -d '{"title":"Lost Racket","description":"Near Franklin DC","category":"Sport","location":"Franklin DC","dateLost":"2026-10-12","color":"Black","brand":"Yonex"}'
 ```
 
+## Tests
+
+Run the Jest suite with:
+
+```bash
+npm test
+```
+
+- `__tests__/lostItemsService.test.js` — service rules; the repository is mocked with `jest.unstable_mockModule`.
+- `__tests__/htmxFragments.test.js` — HTMX routes and HTML fragments.
+- No MongoDB is needed; all 100 tests pass with the database environment unset.
+- CI runs `npm test -- --ci` in `.github/workflows/test.yml`.
+
 ## System Diagram
 
 The app uses a Routes → Controller → Service → Repository layering.
@@ -173,6 +182,10 @@ The app uses a Routes → Controller → Service → Repository layering.
 Browser
   |
   | POST /lost-items (form submit by HTMX; HTML fragment comes back)
+  v
+server.js
+(connects with config/database.js, then starts the app)
+  |
   v
 app.js
 (Express app: static files, JSON/urlencoded
@@ -190,14 +203,14 @@ controllers/lostItemsController.js
   |
   |
   v
-services/lostItemsService.js
+services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
 (Validation and business rules for the feature)
 (uses utils/validateLostItem.js and utils/result.js)
   |
   |
   v
 repositories/lostItemsRepository.js
-(the only layer that reads/writes storage)
+(the only layer that reads/writes storage; mocked in the service test)
   |
   |
   v
@@ -207,6 +220,17 @@ models/LostItem.js
   v
 MongoDB
 (collection: "lostitems")
+```
+
+**Tests (Jest)**
+
+```
+__tests__/lostItemsService.test.js
+  imports services/lostItemsService.js
+  mocks repositories/lostItemsRepository.js with jest.unstable_mockModule
+
+__tests__/htmxFragments.test.js
+  imports app.js/routes and mocks the service
 ```
 
 - A page load (e.g. `GET /lost-items`) flows
@@ -252,7 +276,9 @@ The output starts with a `<div role="status"` confirmation and has no `<html>`, 
 
 ## Design Decisions
 
-**Dat Quoc Pham (@heoconngoc):**
+### Dat Quoc Pham (@heoconngoc):
+
+**Sprint 2:**
 
 One design decision I made in Sprint 2 was to create a `docs/sprint-2-contract.md` file before we began implementing the feature. This document defines the technology stack, data model, API endpoints, shared interfaces, error handling, and team responsibilities.
 
@@ -262,6 +288,14 @@ For example, we agreed that the dateLost field would use the YYYY-MM-DD format i
 
 Writing the contract took some additional time upfront, but it helped us coordinate our work, clarify responsibilities, and reduce the risk of integration issues.
 
-**Jerry Chen (@Jerry605185):**
+**Sprint 3:**
+
+One design decision I made in Sprint 3 was to test the service layer with Jest by mocking the repository using `jest.unstable_mockModule`, instead of connecting to a real MongoDB. The alternative was an integration test that starts a real MongoDB and exercises the repository and service together.
+
+I chose the mocked repository because `npm test` must pass with no database running, the suite runs in under a second, and each service rule — required fields, invalid `_id`, not found, update/delete — can be triggered without seeding data.
+
+The cost is that the mock can drift from real Mongoose behavior, for example around `findByIdAndUpdate` options. To cover that, I still checked the real repository manually against MongoDB: created an item through the API, restarted the server, fetched it by id, and deleted it. The integration-test alternative would catch that drift automatically, but it would add a database dependency to CI and make the suite slower.
+
+### Jerry Chen (@Jerry605185):
 
 One design decision I made is that I chose to have the browser form send its data with fetch to POST /api/lost-items and show any error on the same page. The alternative was server-rendered form, which is post to a page route such as /lost-items, and on failure re-render new.ejs with the error message. I chose fetch because it can return 201 on success and a 400 with {success: false, error} on a validation failure. The alternative version would need a second POST route that repeats the controller's Ok/Err handling. It would also need to pass all eight field values back into the template after every error so the user's typing isn't lost. With fetch the page never reloads, so the typed values stay in place on their own. The error text starts with the field name, such as "location must be between 1 and 150 characters", so the script can highlight and focus that input. The cost is that the form needs JavaScript. With JavaScript off, it posts to the same endpoint and shows raw JSON instead of a friendly page. I accepted that because this project targets ordinary browsers and one tested endpoint is easier to keep correct than two.
