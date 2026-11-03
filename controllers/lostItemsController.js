@@ -134,7 +134,11 @@ export const submitLostItemEdit = async (req, res) => {
       .render("fragments/form-error", { message: result.error });
   }
 
-  res.render("fragments/item-updated", { item: toPublicItem(result.value) });
+  res.render("fragments/item-updated", {
+    item: toPublicItem(result.value),
+    categories: CATEGORY_SUGGESTIONS,
+    today: todayISO(),
+  });
 };
 
 // Called by the Delete button on the detail page through HTMX (hx-delete).
