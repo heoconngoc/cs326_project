@@ -1,11 +1,19 @@
+
 import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
 import request from "supertest";
+
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
+const mockGetLostItemById = jest.fn();
+const mockUpdateLostItem = jest.fn();
+const mockDeleteLostItem = jest.fn();
 
 jest.unstable_mockModule("../services/lostItemsService.js", () => ({
   createLostItem: mockCreateLostItem,
   getAllLostItems: mockGetAllLostItems,
+  getLostItemById: mockGetLostItemById,
+  updateLostItem: mockUpdateLostItem,
+  deleteLostItem: mockDeleteLostItem,
 }));
 
 const { default: app } = await import("../app.js");

@@ -1,0 +1,64 @@
+<%- include('../partials/header', { useHtmx: true }) %>
+<%
+  const onSendError = "document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-network-error').innerHTML";
+  const onTimeout = "document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-timeout').innerHTML";
+%>
+
+<div class="mx-auto max-w-2xl">
+  <a class="text-sm font-medium text-stone-600 hover:text-red-900" href="/lost-items">&larr; Back to Lost Items</a>
+  <h1 class="mb-6 mt-3 text-2xl font-bold tracking-tight">Item Details</h1>
+
+  <div id="item-details">
+    <%- include('../fragments/item-card', { item, showLink: false }) %>
+  </div>
+
+  <%# Answers from the edit form and the delete button are swapped in here. %>
+  <div id="form-feedback" class="mt-4" aria-live="polite"></div>
+
+  <%# Edit: hx-patch sends PATCH /lost-items/:id and swaps the fragment it returns. %>
+  <details class="mt-6 rounded-xl border border-stone-200 bg-white shadow-sm">
+    <summary class="cursor-pointer select-none rounded-xl px-4 py-3 font-semibold text-stone-800 hover:bg-stone-50 sm:px-6">Edit this report</summary>
+    <form id="edit-item-form"
+          class="group border-t border-stone-200 p-4 sm:p-6"
+          hx-patch="/lost-items/<%= item.id %>"
+          hx-target="#form-feedback"
+          hx-swap="innerHTML show:#form-feedback:top"
+          hx-disabled-elt="find button[type='submit']"
+          hx-on::send-error="<%= onSendError %>"
+          hx-on::timeout="<%= onTimeout %>">
+      <div class="grid gap-5 md:grid-cols-2">
+        <%- include('../partials/item-fields', { values: item, withContact: false }) %>
+      </div>
+
+      <div class="mt-6 flex flex-col sm:flex-row sm:justify-end">
+        <button type="submit" class="rounded-lg bg-red-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-60">
+          <span class="group-[.htmx-request]:hidden">Save changes</span>
+          <span class="hidden group-[.htmx-request]:inline">Saving…</span>
+        </button>
+      </div>
+    </form>
+  </details>
+
+  <%# Delete: hx-delete sends DELETE /lost-items/:id after a confirmation. %>
+  <section class="mt-6 flex flex-col gap-4 rounded-xl border border-red-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div>
+      <h2 class="font-semibold text-stone-900">Delete this report</h2>
+      <p class="mt-1 text-sm text-stone-600">This permanently removes the report. It cannot be undone.</p>
+    </div>
+    <button type="button" id="delete-item"
+            class="rounded-lg border border-red-300 bg-white px-5 py-2.5 font-semibold text-red-900 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            hx-delete="/lost-items/<%= item.id %>"
+            hx-confirm="Delete this report? This cannot be undone."
+            hx-target="#form-feedback"
+            hx-swap="innerHTML show:#form-feedback:top"
+            hx-disabled-elt="this"
+            hx-on::send-error="<%= onSendError %>"
+            hx-on::timeout="<%= onTimeout %>">Delete</button>
+  </section>
+
+  <%# Shown when the request itself fails, so no server response exists to swap. %>
+  <template id="tpl-network-error"><%- include('../fragments/form-error', { message: 'Could not reach the server. Check your connection and try again.' }) %></template>
+  <template id="tpl-timeout"><%- include('../fragments/form-error', { message: 'The server took too long to respond. Please try again.' }) %></template>
+</div>
+
+<%- include('../partials/footer') %>
