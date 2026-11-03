@@ -3,7 +3,10 @@ import {
   showHomePage,
   showLostItemsPage,
   showNewLostItemForm,
+  showLostItemDetails,
   submitLostItemForm,
+  submitLostItemEdit,
+  submitLostItemDelete,
   createLostItemApi,
   listLostItemsApi,
   getLostItemApi,
@@ -16,8 +19,12 @@ export const pageRouter = Router();
 
 pageRouter.get("/", showHomePage);
 pageRouter.get("/lost-items", asyncHandler(showLostItemsPage));
+// "/lost-items/new" must stay above "/lost-items/:id", or "new" is read as an id.
 pageRouter.get("/lost-items/new", showNewLostItemForm);
 pageRouter.post("/lost-items", asyncHandler(submitLostItemForm));
+pageRouter.get("/lost-items/:id", asyncHandler(showLostItemDetails));
+pageRouter.patch("/lost-items/:id", asyncHandler(submitLostItemEdit));
+pageRouter.delete("/lost-items/:id", asyncHandler(submitLostItemDelete));
 
 export const apiRouter = Router();
 

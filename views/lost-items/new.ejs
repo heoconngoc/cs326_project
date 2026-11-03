@@ -1,9 +1,4 @@
 <%- include('../partials/header', { useHtmx: true }) %>
-<%
-  const input = 'block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-base shadow-sm placeholder:text-stone-400 focus:border-red-800 focus:outline-none focus:ring-2 focus:ring-red-800/30 user-invalid:border-red-600 user-invalid:bg-red-50';
-  const label = 'mb-1 block text-sm font-medium text-stone-800';
-  const hint = 'mt-1 text-xs text-stone-500';
-%>
 
 <div class="mx-auto max-w-2xl">
   <h1 class="mb-6 text-2xl font-bold tracking-tight">Report a Lost Item</h1>
@@ -20,58 +15,7 @@
         hx-on::send-error="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-network-error').innerHTML"
         hx-on::timeout="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-timeout').innerHTML">
     <div class="grid gap-5 md:grid-cols-2">
-      <div class="md:col-span-2">
-        <label class="<%= label %>" for="title">Title <span class="text-red-700">*</span></label>
-        <input class="<%= input %>" id="title" name="title" type="text" required minlength="3" maxlength="100"
-               placeholder="e.g. Black badminton racket">
-        <p class="<%= hint %>">3–100 characters</p>
-      </div>
-
-      <div class="md:col-span-2">
-        <label class="<%= label %>" for="description">Description <span class="text-red-700">*</span></label>
-        <textarea class="<%= input %>" id="description" name="description" rows="4" required maxlength="1000"
-                  placeholder="Anything that helps identify it"></textarea>
-        <p class="<%= hint %>">Up to 1000 characters</p>
-      </div>
-
-      <div>
-        <label class="<%= label %>" for="category">Category <span class="text-red-700">*</span></label>
-        <input class="<%= input %>" id="category" name="category" type="text" required maxlength="50"
-               list="category-options" placeholder="e.g. Sport">
-        <datalist id="category-options">
-          <% categories.forEach((c) => { %>
-            <option value="<%= c %>"></option>
-          <% }) %>
-        </datalist>
-      </div>
-
-      <div>
-        <label class="<%= label %>" for="dateLost">Date lost <span class="text-red-700">*</span></label>
-        <input class="<%= input %>" id="dateLost" name="dateLost" type="date" required max="<%= today %>">
-      </div>
-
-      <div class="md:col-span-2">
-        <label class="<%= label %>" for="location">Location <span class="text-red-700">*</span></label>
-        <input class="<%= input %>" id="location" name="location" type="text" required maxlength="150"
-               placeholder="e.g. Franklin Dining Commons">
-      </div>
-
-      <div>
-        <label class="<%= label %>" for="color">Color</label>
-        <input class="<%= input %>" id="color" name="color" type="text" maxlength="50">
-      </div>
-
-      <div>
-        <label class="<%= label %>" for="brand">Brand</label>
-        <input class="<%= input %>" id="brand" name="brand" type="text" maxlength="80">
-      </div>
-
-      <div class="md:col-span-2">
-        <label class="<%= label %>" for="contactInfo">Contact info</label>
-        <input class="<%= input %>" id="contactInfo" name="contactInfo" type="text" maxlength="150"
-               placeholder="e.g. you@umass.edu">
-        <p class="<%= hint %>">Stored for staff only. It is not shown on the public list.</p>
-      </div>
+      <%- include('../partials/item-fields', { values: {}, withContact: true }) %>
     </div>
 
     <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

@@ -22,8 +22,7 @@ const toPublicItem = (item) => ({
   createdAt: item.createdAt.toISOString(),
 });
 
-const resultStatus = (error) =>
-  error === "Item not found" ? 404 : 400;
+const resultStatus = (error) => (error === "Item not found" ? 404 : 400);
 
 const sendResultError = (res, result) =>
   res.status(resultStatus(result.error)).json({
@@ -84,7 +83,6 @@ export const listLostItemsApi = async (req, res) => {
   res.status(200).json({ success: true, data: items.map(toPublicItem) });
 };
 
-
 export const getLostItemApi = async (req, res) => {
   const result = await getLostItemById(req.params.id);
 
@@ -122,6 +120,40 @@ export const deleteLostItemApi = async (req, res) => {
     success: true,
     message: "Item deleted successfully",
   });
+};
+
+// Called by the edit form on the detail page through HTMX (hx-patch). Answers
+// with a fragment: the saved confirmation (the updated card rides along as an
+// out-of-band swap) or the error message with the right status.
+export const submitLostItemEdit = async (req, res) => {
+  const result = await updateLostItem(req.params.id, req.body);
+
+  if (!result.ok) {
+    return res
+      .status(resultStatus(result.error))
+      .render("fragments/form-error", { message: result.error });
+  }
+
+  res.render("fragments/item-updated", {
+    item: toPublicItem(result.value),
+    categories: CATEGORY_SUGGESTIONS,
+    today: todayISO(),
+  });
+};
+
+// Called by the Delete button on the detail page through HTMX (hx-delete).
+// HX-Redirect makes htmx send the browser to the list, where the item is gone.
+// The fragment is what other callers (for example curl) see.
+export const submitLostItemDelete = async (req, res) => {
+  const result = await deleteLostItem(req.params.id);
+
+  if (!result.ok) {
+    return res
+      .status(resultStatus(result.error))
+      .render("fragments/form-error", { message: result.error });
+  }
+
+  res.set("HX-Redirect", "/lost-items").render("fragments/item-deleted");
 };
 
 export const showLostItemDetails = async (req, res) => {
