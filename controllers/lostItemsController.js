@@ -4,6 +4,9 @@ import {
   getLostItemById,
   updateLostItem,
   deleteLostItem,
+  getLostItemById,
+  updateLostItem,
+  deleteLostItem,
 } from "../services/lostItemsService.js";
 import { CATEGORY_SUGGESTIONS } from "../constants/categories.js";
 
@@ -20,6 +23,16 @@ const toPublicItem = (item) => ({
   brand: item.brand,
   status: item.status,
   createdAt: item.createdAt.toISOString(),
+});
+
+const resultStatus = (error) =>
+  error === "Item not found" ? 404 : 400;
+
+const sendResultError = (res, result) =>
+  res.status(resultStatus(result.error)).json({
+    success: false,
+    error: result.error,
+  });
 });
 
 const resultStatus = (error) =>

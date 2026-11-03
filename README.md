@@ -64,21 +64,28 @@ While editing the views, `npm run dev:css` rebuilds the CSS every time a file ch
 ### Configure the environment
 
 Create `.env` from the template:
+Create `.env` from the template:
 
 ```bash
 cp .env.example .env
 ```
 
 The template uses the dev container's MongoDB service:
+The template uses the dev container's MongoDB service:
 
 ```env
+MONGODB_URI=mongodb://dev:devpassword@mongo:27017/devdb?authSource=admin
 MONGODB_URI=mongodb://dev:devpassword@mongo:27017/devdb?authSource=admin
 ```
 
 - **Inside the dev container:** keep `mongo` as the host.
 - **Running outside the dev container:** use `localhost` instead of `mongo`.
 - **MongoDB without authentication:** `mongodb://127.0.0.1:27017/devdb`.
+- **Inside the dev container:** keep `mongo` as the host.
+- **Running outside the dev container:** use `localhost` instead of `mongo`.
+- **MongoDB without authentication:** `mongodb://127.0.0.1:27017/devdb`.
 
+`npm start` loads `.env` automatically. Do not commit `.env`.
 `npm start` loads `.env` automatically. Do not commit `.env`.
 
 ### Start the server
@@ -98,11 +105,11 @@ Listening on http://localhost:3000
 
 ### Open the website
 
-| Page               | URL                                  |
-| ------------------ | ------------------------------------ |
-| Home page          | http://localhost:3000                |
-| Lost items list    | http://localhost:3000/lost-items     |
-| Report a lost item | http://localhost:3000/lost-items/new |
+| Page                              | URL                                  |
+| --------------------------------- | ------------------------------------ |
+| Home page                         | http://localhost:3000                |
+| Lost items list                   | http://localhost:3000/lost-items     |
+| Report a lost item                | http://localhost:3000/lost-items/new |
 | Item details (view, edit, delete) | http://localhost:3000/lost-items/:id |
 
 ### Troubleshooting
@@ -169,20 +176,20 @@ Edit and delete are open to every visitor. There is no login or owner check yet.
 
 ## API Endpoints
 
-| Method | Endpoint          | Description                      | Success  |
-| ------ | ----------------- | -------------------------------- | -------- |
-| GET    | `/`               | Home page                        | 200 HTML |
-| GET    | `/lost-items`     | Lost items list, newest first    | 200 HTML |
-| GET    | `/lost-items/new` | Report-a-lost-item form          | 200 HTML |
-| POST   | `/lost-items`     | Form submit from HTMX; answers with an HTML fragment (no `<html>`) | 201 or 400 HTML fragment |
-| GET    | `/lost-items/:id` | Item details page with edit form and delete button | 200 HTML (400 / 404 error page) |
-| PATCH  | `/lost-items/:id` | Edit from HTMX; answers with a fragment (saved message + updated card) | 200 HTML fragment (400 / 404 error fragment) |
-| DELETE | `/lost-items/:id` | Delete from HTMX; sets `HX-Redirect: /lost-items` | 200 HTML fragment (400 / 404 error fragment) |
-| GET    | `/api/lost-items` | List items as JSON, newest first | 200 JSON |
-| POST   | `/api/lost-items` | Create a lost item               | 201 JSON |
-| GET    | `/api/lost-items/:id` | Get one item as JSON         | 200 JSON (400 / 404) |
-| PATCH  | `/api/lost-items/:id` | Update the editable fields   | 200 JSON (400 / 404) |
-| DELETE | `/api/lost-items/:id` | Delete an item               | 200 JSON (400 / 404) |
+| Method | Endpoint              | Description                                                            | Success                                      |
+| ------ | --------------------- | ---------------------------------------------------------------------- | -------------------------------------------- |
+| GET    | `/`                   | Home page                                                              | 200 HTML                                     |
+| GET    | `/lost-items`         | Lost items list, newest first                                          | 200 HTML                                     |
+| GET    | `/lost-items/new`     | Report-a-lost-item form                                                | 200 HTML                                     |
+| POST   | `/lost-items`         | Form submit from HTMX; answers with an HTML fragment (no `<html>`)     | 201 or 400 HTML fragment                     |
+| GET    | `/lost-items/:id`     | Item details page with edit form and delete button                     | 200 HTML (400 / 404 error page)              |
+| PATCH  | `/lost-items/:id`     | Edit from HTMX; answers with a fragment (saved message + updated card) | 200 HTML fragment (400 / 404 error fragment) |
+| DELETE | `/lost-items/:id`     | Delete from HTMX; sets `HX-Redirect: /lost-items`                      | 200 HTML fragment (400 / 404 error fragment) |
+| GET    | `/api/lost-items`     | List items as JSON, newest first                                       | 200 JSON                                     |
+| POST   | `/api/lost-items`     | Create a lost item                                                     | 201 JSON                                     |
+| GET    | `/api/lost-items/:id` | Get one item as JSON                                                   | 200 JSON (400 / 404)                         |
+| PATCH  | `/api/lost-items/:id` | Update the editable fields                                             | 200 JSON (400 / 404)                         |
+| DELETE | `/api/lost-items/:id` | Delete an item                                                         | 200 JSON (400 / 404)                         |
 
 Example POST request:
 
@@ -238,12 +245,14 @@ controllers/lostItemsController.js
   |
   v
 services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
+services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
 (Validation and business rules for the feature)
 (uses utils/validateLostItem.js and utils/result.js)
   |
   |
   v
 repositories/lostItemsRepository.js
+(the only layer that reads/writes storage; mocked in the service test)
 (the only layer that reads/writes storage; mocked in the service test)
   |
   |
@@ -267,14 +276,25 @@ __tests__/htmxFragments.test.js
   imports app.js/routes and mocks the service
 ```
 
+**Tests (Jest)**
+
+```
+__tests__/lostItemsService.test.js
+  imports services/lostItemsService.js
+  mocks repositories/lostItemsRepository.js with jest.unstable_mockModule
+
+__tests__/htmxFragments.test.js
+  imports app.js/routes and mocks the service
+```
+
 - A page load (e.g. `GET /lost-items`) flows
   `Browser → app.js → pageRouter → controller → service → repository → MongoDB`,
   then the controller renders an EJS view and returns HTML.
 - A form submit flows `Browser (htmx) → app.js → pageRouter → controller →
 service → repository → MongoDB`, and the controller renders a small EJS
-fragment from `views/fragments/` that htmx swaps into the page.
+  fragment from `views/fragments/` that htmx swaps into the page.
 - The JSON API (`POST /api/lost-items`) takes the same path through `apiRouter`
-and the controller returns JSON instead.
+  and the controller returns JSON instead.
 - If any layer throws, the wrapped async handler forwards the error to the
   error-handling middleware in `middleware/errorHandler.js`.
 
@@ -314,13 +334,17 @@ The first prints the "saved" fragment, the second shows the `HX-Redirect: /lost-
 
 **Tailwind CSS.** Styles are utility classes in the EJS views. `src/input.css` is the Tailwind entry point and `npm run build:css` compiles it (see "Build the CSS"). To check the responsive layout, open the pages in the browser's device toolbar at 375 px and at 1280 px wide:
 
-| Part | 375 px (phone) | 1280 px (desktop) |
-| ---- | -------------- | ----------------- |
-| Header | Navigation sits under the logo | Logo and navigation on one row |
-| Report form | One column of fields; buttons stacked and full width | Centered card; Category/Date and Color/Brand side by side |
-| Lost items list | One column of cards | Three columns of cards |
+| Part            | 375 px (phone)                                       | 1280 px (desktop)                                         |
+| --------------- | ---------------------------------------------------- | --------------------------------------------------------- |
+| Header          | Navigation sits under the logo                       | Logo and navigation on one row                            |
+| Report form     | One column of fields; buttons stacked and full width | Centered card; Category/Date and Color/Brand side by side |
+| Lost items list | One column of cards                                  | Three columns of cards                                    |
 
 ## Design Decisions
+
+### Dat Quoc Pham (@heoconngoc):
+
+**Sprint 2:**
 
 ### Dat Quoc Pham (@heoconngoc):
 
@@ -333,6 +357,16 @@ An alternative was to let each team member start coding independently and resolv
 For example, we agreed that the dateLost field would use the YYYY-MM-DD format in API requests and responses, while the backend would store it as a Mongoose Date. Since Jerry was working on the frontend and I was implementing the backend validation and database layers, this agreement gave us a consistent data format to follow. Without it, the frontend might have sent a different date format than the backend expected, requiring us to change the form submission logic or validation code during integration.
 
 Writing the contract took some additional time upfront, but it helped us coordinate our work, clarify responsibilities, and reduce the risk of integration issues.
+
+**Sprint 3:**
+
+One design decision I made in Sprint 3 was to test the service layer with Jest by mocking the repository using `jest.unstable_mockModule`, instead of connecting to a real MongoDB. The alternative was an integration test that starts a real MongoDB and exercises the repository and service together.
+
+I chose the mocked repository because `npm test` must pass with no database running, the suite runs in under a second, and each service rule — required fields, invalid `_id`, not found, update/delete — can be triggered without seeding data.
+
+The cost is that the mock can drift from real Mongoose behavior, for example around `findByIdAndUpdate` options. To cover that, I still checked the real repository manually against MongoDB: created an item through the API, restarted the server, fetched it by id, and deleted it. The integration-test alternative would catch that drift automatically, but it would add a database dependency to CI and make the suite slower.
+
+### Jerry Chen (@Jerry605185):
 
 **Sprint 3:**
 
