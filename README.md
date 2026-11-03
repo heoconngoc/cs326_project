@@ -64,28 +64,21 @@ While editing the views, `npm run dev:css` rebuilds the CSS every time a file ch
 ### Configure the environment
 
 Create `.env` from the template:
-Create `.env` from the template:
 
 ```bash
 cp .env.example .env
 ```
 
 The template uses the dev container's MongoDB service:
-The template uses the dev container's MongoDB service:
 
 ```env
-MONGODB_URI=mongodb://dev:devpassword@mongo:27017/devdb?authSource=admin
 MONGODB_URI=mongodb://dev:devpassword@mongo:27017/devdb?authSource=admin
 ```
 
 - **Inside the dev container:** keep `mongo` as the host.
 - **Running outside the dev container:** use `localhost` instead of `mongo`.
 - **MongoDB without authentication:** `mongodb://127.0.0.1:27017/devdb`.
-- **Inside the dev container:** keep `mongo` as the host.
-- **Running outside the dev container:** use `localhost` instead of `mongo`.
-- **MongoDB without authentication:** `mongodb://127.0.0.1:27017/devdb`.
 
-`npm start` loads `.env` automatically. Do not commit `.env`.
 `npm start` loads `.env` automatically. Do not commit `.env`.
 
 ### Start the server
@@ -245,14 +238,12 @@ controllers/lostItemsController.js
   |
   v
 services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
-services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
 (Validation and business rules for the feature)
 (uses utils/validateLostItem.js and utils/result.js)
   |
   |
   v
 repositories/lostItemsRepository.js
-(the only layer that reads/writes storage; mocked in the service test)
 (the only layer that reads/writes storage; mocked in the service test)
   |
   |
@@ -263,17 +254,6 @@ models/LostItem.js
   v
 MongoDB
 (collection: "lostitems")
-```
-
-**Tests (Jest)**
-
-```
-__tests__/lostItemsService.test.js
-  imports services/lostItemsService.js
-  mocks repositories/lostItemsRepository.js with jest.unstable_mockModule
-
-__tests__/htmxFragments.test.js
-  imports app.js/routes and mocks the service
 ```
 
 **Tests (Jest)**
@@ -346,10 +326,6 @@ The first prints the "saved" fragment, the second shows the `HX-Redirect: /lost-
 
 **Sprint 2:**
 
-### Dat Quoc Pham (@heoconngoc):
-
-**Sprint 2:**
-
 One design decision I made in Sprint 2 was to create a `docs/sprint-2-contract.md` file before we began implementing the feature. This document defines the technology stack, data model, API endpoints, shared interfaces, error handling, and team responsibilities.
 
 An alternative was to let each team member start coding independently and resolve interface differences during integration. Although this would have allowed us to start coding sooner, it could have introduced inconsistencies and required additional debugging and rework.
@@ -368,14 +344,10 @@ The cost is that the mock can drift from real Mongoose behavior, for example aro
 
 ### Jerry Chen (@Jerry605185):
 
-**Sprint 3:**
-
-One design decision I made in Sprint 3 was to test the service layer with Jest by mocking the repository using `jest.unstable_mockModule`, instead of connecting to a real MongoDB. The alternative was an integration test that starts a real MongoDB and exercises the repository and service together.
-
-I chose the mocked repository because `npm test` must pass with no database running, the suite runs in under a second, and each service rule — required fields, invalid `_id`, not found, update/delete — can be triggered without seeding data.
-
-The cost is that the mock can drift from real Mongoose behavior, for example around `findByIdAndUpdate` options. To cover that, I still checked the real repository manually against MongoDB: created an item through the API, restarted the server, fetched it by id, and deleted it. The integration-test alternative would catch that drift automatically, but it would add a database dependency to CI and make the suite slower.
+**Sprint 2:**
 
 ### Jerry Chen (@Jerry605185):
 
 One design decision I made is that I chose to have the browser form send its data with fetch to POST /api/lost-items and show any error on the same page. The alternative was server-rendered form, which is post to a page route such as /lost-items, and on failure re-render new.ejs with the error message. I chose fetch because it can return 201 on success and a 400 with {success: false, error} on a validation failure. The alternative version would need a second POST route that repeats the controller's Ok/Err handling. It would also need to pass all eight field values back into the template after every error so the user's typing isn't lost. With fetch the page never reloads, so the typed values stay in place on their own. The error text starts with the field name, such as "location must be between 1 and 150 characters", so the script can highlight and focus that input. The cost is that the form needs JavaScript. With JavaScript off, it posts to the same endpoint and shows raw JSON instead of a friendly page. I accepted that because this project targets ordinary browsers and one tested endpoint is easier to keep correct than two.
+
+**Sprint 3:**

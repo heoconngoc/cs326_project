@@ -1,8 +1,32 @@
-<div role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900">
-  <p class="font-semibold">Your changes were saved.</p>
+<div
+  role="status"
+  class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900"
+>
+  <p class="font-semibold"></p>
 </div>
-<%# Out-of-band swap: htmx also replaces the existing #item-details block on
-    the page with this updated card, so the details above the form stay current. %>
-<div id="item-details" hx-swap-oob="true">
-  <%- include('item-card', { item, showLink: false }) %>
-</div>
+
+<div id="item-details" hx-swap-oob="true"></div>
+
+<form
+  id="edit-item-form"
+  class="group border-t border-stone-200 p-4 sm:p-6"
+  hx-patch="/lost-items/<%= item.id %>"
+  hx-target="#form-feedback"
+  hx-swap="innerHTML show:#form-feedback:top"
+  hx-disabled-elt="find button[type='submit']"
+  hx-on::send-error="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-network-error').innerHTML"
+  hx-on::timeout="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-timeout').innerHTML"
+  hx-swap-oob="outerHTML"
+>
+  <div class="grid gap-5 md:grid-cols-2"></div>
+
+  <div class="mt-6 flex flex-col sm:flex-row sm:justify-end">
+    <button
+      type="submit"
+      class="rounded-lg bg-red-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      <span class="group-[.htmx-request]:hidden">Save changes</span>
+      <span class="hidden group-[.htmx-request]:inline">Saving…</span>
+    </button>
+  </div>
+</form>

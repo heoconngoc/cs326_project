@@ -252,17 +252,70 @@ describe("DELETE /lost-items/:id (HTMX delete)", () => {
     expect(res.status).toBe(400);
     expect(await res.text()).toContain("Invalid item ID");
   });
-});
+  describe("DELETE /lost-items/:id (HTMX delete)", () => {
+    const remove = (id) =>
+      fetch(`${base}/lost-items/${id}`, { method: "DELETE", headers: htmx });
 
-describe("JSON API by id is untouched", () => {
-  test("GET /api/lost-items/:id still answers with JSON", async () => {
-    mockGetLostItemById.mockResolvedValue(Ok(savedItem));
+    test("200: sends HX-Redirect to the list and a confirmation fragment", async () => {
+      mockDeleteLostItem.mockResolvedValue(Ok(savedItem));
 
-    const res = await fetch(`${base}/api/lost-items/${ID}`);
-    const body = await res.json();
+      const res = await remove(ID);
+      const html = await res.text();
 
-    expect(res.status).toBe(200);
-    expect(body.data.id).toBe(ID);
-    expect(body.data).not.toHaveProperty("contactInfo");
+      expect(res.status).toBe(200);
+      expect(res.headers.get("hx-redirect")).toBe("/lost-items");
+      expect(html).toContain("deleted");
+      expect(html).not.toMatch(/<html|<body/i);
+      expect(mockDeleteLostItem).toHaveBeenCalledWith(ID);
+    });
+
+    test("404: already deleted shows an error fragment and no redirect", async () => {
+      mockDeleteLostItem.mockResolvedValue(Err("Item not found"));
+
+      const res = await remove(ID);
+
+      expect(res.status).toBe(404);
+      expect(res.headers.get("hx-redirect")).toBeNull();
+      expect(await res.text()).toContain("Item not found");
+    });
+
+    test("400: malformed id", async () => {
+      mockDeleteLostItem.mockResolvedValue(Err("Invalid item ID"));
+
+      const res = await remove("nope");
+
+      expect(res.status).toBe(400);
+      expect(await res.text()).toContain("Invalid item ID");
+    });
+    test("500: unexpected delete failure does not leak details", async () => {
+      const consoleError = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      mockDeleteLostItem.mockRejectedValue(new Error("db password is hunter2"));
+
+      const res = await fetch(`${base}/lost-items/${ID}`, {
+        method: "DELETE",
+        headers: htmx,
+      });
+      const html = await res.text();
+
+      expect(res.status).toBe(500);
+      expect(html).toContain("Something went wrong");
+      expect(html).not.toContain("hunter2");
+      consoleError.mockRestore();
+    });
+  });
+
+  describe("JSON API by id is untouched", () => {
+    test("GET /api/lost-items/:id still answers with JSON", async () => {
+      mockGetLostItemById.mockResolvedValue(Ok(savedItem));
+
+      const res = await fetch(`${base}/api/lost-items/${ID}`);
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body.data.id).toBe(ID);
+      expect(body.data).not.toHaveProperty("contactInfo");
+    });
   });
 });
