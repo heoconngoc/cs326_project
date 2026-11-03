@@ -4,9 +4,6 @@ import {
   getLostItemById,
   updateLostItem,
   deleteLostItem,
-  getLostItemById,
-  updateLostItem,
-  deleteLostItem,
 } from "../services/lostItemsService.js";
 import { CATEGORY_SUGGESTIONS } from "../constants/categories.js";
 
@@ -25,18 +22,7 @@ const toPublicItem = (item) => ({
   createdAt: item.createdAt.toISOString(),
 });
 
-const resultStatus = (error) =>
-  error === "Item not found" ? 404 : 400;
-
-const sendResultError = (res, result) =>
-  res.status(resultStatus(result.error)).json({
-    success: false,
-    error: result.error,
-  });
-});
-
-const resultStatus = (error) =>
-  error === "Item not found" ? 404 : 400;
+const resultStatus = (error) => (error === "Item not found" ? 404 : 400);
 
 const sendResultError = (res, result) =>
   res.status(resultStatus(result.error)).json({
@@ -96,7 +82,6 @@ export const listLostItemsApi = async (req, res) => {
 
   res.status(200).json({ success: true, data: items.map(toPublicItem) });
 };
-
 
 export const getLostItemApi = async (req, res) => {
   const result = await getLostItemById(req.params.id);
