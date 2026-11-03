@@ -16,7 +16,9 @@
 
 ## Project Domain
 
-We will be working on developing a lost and found system that benefits those who lost their stuff. This will make the process of lost and found much more effective. People lost their stuff won't need to go the actual lost and found office. Instead, they can just check online if their stuff has been found or not.In addition, the system will allow users to post detailed descriptions of lost items and upload photos, while finders can record found items with information such as category, color, brand, location, and date.
+We will be working on developing a lost and found system that benefits those who lost their stuff. This will make the process of lost and found much more effective.
+
+The application currently allows users to create, view, edit, and delete lost item reports. Users can provide details such as category, color, brand, location, and date lost. In future sprints, we plan to expand the system with features such as user authentication, ownership-based permissions, found item reports, and photo uploads.
 
 ## Getting Started
 
@@ -118,7 +120,9 @@ The application connects to MongoDB before starting the HTTP server, so a failed
 
 To verify a successful setup, open the home page at `http://localhost:3000` and the lost-items page at `http://localhost:3000/lost-items`.
 
-## Feature: Report a Lost Item
+## Features
+
+### Report a Lost Item
 
 Someone who lost an item can report it through a browser form. The report is validated, saved to MongoDB, and then shown on the Lost Items List page.
 
@@ -143,7 +147,7 @@ Someone who lost an item can report it through a browser form. The report is val
    and nothing is saved.
 6. `contact info` is stored for staff but is never returned by the public API. We are still thinking about how we should display the `contact info` regarding the personal privacy.
 
-## Feature: View, Edit and Delete a Lost Item
+### View, Edit and Delete a Lost Item
 
 Every card on the Lost Items list links to a details page for that report
 (`/lost-items/:id`). The page shows the item, an edit form, and a delete button.
@@ -155,7 +159,7 @@ Every card on the Lost Items list links to a details page for that report
    **Save changes**. HTMX sends `PATCH /lost-items/:id` (`hx-patch`) and the page
    does not reload. On success the server answers with a fragment: a "saved"
    message plus the updated item card, which HTMX swaps over the card at the top
-   of the page (`hx-swap-oob`). If validation fails, the server answers with
+   of the page (`hx-swap-oob`). After a successful update, HTMX also replaces the edit form with the saved values so that the form and displayed item remain consistent. If validation fails, the server answers with
    `400` and the message appears under the card; nothing is saved.
 3. Click **Delete**. The browser asks for confirmation (`hx-confirm`). If you
    accept, HTMX sends `DELETE /lost-items/:id` (`hx-delete`). On success the
@@ -228,7 +232,7 @@ parsing, mounts routers, 404 handler, and error-handling middleware)
   |
   v
 routes/lostItemsRoutes.js
-(maps paths to controller functions, no logic))
+(maps paths to controller functions, no logic)
   |
   |
   v
@@ -258,14 +262,23 @@ MongoDB
 
 **Tests (Jest)**
 
-```
+```text
 __tests__/lostItemsService.test.js
-  imports services/lostItemsService.js
-  mocks repositories/lostItemsRepository.js with jest.unstable_mockModule
+  -> tests services/lostItemsService.js
+  -> mocks repositories/lostItemsRepository.js
+     using jest.unstable_mockModule
 
 __tests__/htmxFragments.test.js
-  imports app.js/routes and mocks the service
+  -> tests POST /lost-items and HTML fragments
+  -> mocks services/lostItemsService.js
+
+__tests__/itemDetailsFragments.test.js
+  -> tests GET, PATCH, DELETE /lost-items/:id
+  -> tests validation errors and HTML fragments
+  -> mocks services/lostItemsService.js
 ```
+
+All tests can run without a MongoDB connection using `npm test`.
 
 - A page load (e.g. `GET /lost-items`) flows
   `Browser → app.js → pageRouter → controller → service → repository → MongoDB`,
@@ -320,6 +333,12 @@ The first prints the "saved" fragment, the second shows the `HX-Redirect: /lost-
 | Report form     | One column of fields; buttons stacked and full width | Centered card; Category/Date and Color/Brand side by side |
 | Lost items list | One column of cards                                  | Three columns of cards                                    |
 
+## Limitations
+
+The application currently does not support authentication or authorization. Users do not need to log in to create, view, edit, or delete lost item reports. As a result, any visitor can modify or delete reports created by other users.
+
+This is a security limitation of the current implementation. We plan to address this in Sprint 4 by implementing authentication and authorization. Each lost item report will be associated with its owner, and only authorized users will be allowed to edit or delete their own reports.
+
 ## Design Decisions
 
 ### Dat Quoc Pham (@heoconngoc):
@@ -345,8 +364,6 @@ The cost is that the mock can drift from real Mongoose behavior, for example aro
 ### Jerry Chen (@Jerry605185):
 
 **Sprint 2:**
-
-### Jerry Chen (@Jerry605185):
 
 One design decision I made is that I chose to have the browser form send its data with fetch to POST /api/lost-items and show any error on the same page. The alternative was server-rendered form, which is post to a page route such as /lost-items, and on failure re-render new.ejs with the error message. I chose fetch because it can return 201 on success and a 400 with {success: false, error} on a validation failure. The alternative version would need a second POST route that repeats the controller's Ok/Err handling. It would also need to pass all eight field values back into the template after every error so the user's typing isn't lost. With fetch the page never reloads, so the typed values stay in place on their own. The error text starts with the field name, such as "location must be between 1 and 150 characters", so the script can highlight and focus that input. The cost is that the form needs JavaScript. With JavaScript off, it posts to the same endpoint and shows raw JSON instead of a friendly page. I accepted that because this project targets ordinary browsers and one tested endpoint is easier to keep correct than two.
 
