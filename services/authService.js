@@ -1,20 +1,12 @@
 import bcrypt from "bcrypt";
 import { Ok, Err } from "../utils/result.js";
 import { insertUser, findUserByEmail } from "../repositories/usersRepository.js";
+import { toUserDto } from "../dtos/userDto.js";
 
 const SALT_ROUNDS = 12;
 
-const authError = (status, message) => ({
-  ok: false,
-  error: message,
-  status,
-});
-
-const toPublicUser = (user) => ({
-  id: user._id.toString(),
-  email: user.email,
-  role: user.role,
-});
+const authError = (status, message) =>
+  Err({ status, message });
 
 export const signup = async (email, password) => {
   if(typeof email !== "string" || typeof password !== "string"){
@@ -48,7 +40,7 @@ export const signup = async (email, password) => {
       passwordHash,
     });
 
-    return Ok(toPublicUser(user));
+    return Ok(toUserDto(user));
   } catch(err){
     if (error.code === 11000) {
       return authError(409, "Email already registered");
