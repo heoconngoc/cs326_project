@@ -19,6 +19,12 @@ app.use(
   express.static(path.join(__dirname, "node_modules/htmx.org/dist")),
 );
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+  });
+});
+
 app.use("/api/lost-items", apiRouter);
 app.use("/", pageRouter);
 app.use(notFoundHandler);
