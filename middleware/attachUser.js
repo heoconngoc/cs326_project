@@ -1,6 +1,5 @@
-import { findUserByEmail } from "../repositories/usersRepository";
-import { toUserDto } from "../dtos/userDto";
-import { findLostItemById } from "../repositories/lostItemsRepository";
+import { toUserDto } from "../dtos/userDto.js"
+import { findLostItemById } from "../repositories/lostItemsRepository.js";
 
 export const attachUser = async (req, res, next) => {
   try {

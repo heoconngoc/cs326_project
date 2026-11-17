@@ -16,7 +16,7 @@ export const signup = async (email, password) => {
   const cleanEmail = email.trim().toLowerCase();
 
   if(
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail) ||
     cleanEmail.length > 254
   ) {
     return authError(400, "Invalid email address");
@@ -69,5 +69,5 @@ export const login = async (email, password) => {
     return authError(401, "Invalid email or password");
   }
 
-  return Ok(toPublicUser(user));
+  return Ok(toUserDto(user));
 };
