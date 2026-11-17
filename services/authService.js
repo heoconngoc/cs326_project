@@ -3,7 +3,7 @@ import { Ok, Err } from "../utils/result.js";
 import { insertUser, findUserByEmail } from "../repositories/usersRepository.js";
 import { toUserDto } from "../dtos/userDto.js";
 
-const SALT_ROUNDS = 12;
+const SALT_ROUNDS = 10;
 
 const authError = (status, message) =>
   Err({ status, message });
@@ -41,7 +41,7 @@ export const signup = async (email, password) => {
     });
 
     return Ok(toUserDto(user));
-  } catch(err){
+  } catch (error) {
     if (error.code === 11000) {
       return authError(409, "Email already registered");
     }

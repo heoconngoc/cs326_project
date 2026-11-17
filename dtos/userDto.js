@@ -3,5 +3,3 @@ export const toUserDto = (user) => ({
   email: user.email,
   role: user.role,
 });
-
-

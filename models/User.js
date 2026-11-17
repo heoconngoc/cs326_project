@@ -4,7 +4,7 @@ const userSchema = new mongoose.Schema(
   {
     email: {
       type: String,
-      require: true,
+      required: true,
       unique: true,
       lowercase: true,
       trim: true,
@@ -20,7 +20,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["user", "admin"],
       default: "user",
-      require: true,
+      required: true,
     },
   },
   {

@@ -1,23 +1,23 @@
-import { toUserDto } from "../dtos/userDto.js"
-import { findLostItemById } from "../repositories/lostItemsRepository.js";
+import { findUserById } from "../repositories/usersRepository.js";
+import { toUserDto } from "../dtos/userDto.js";
 
 export const attachUser = async (req, res, next) => {
   try {
     const userId = req.session?.userId;
 
-    if(!userId){
+    if (!userId) {
       return next();
     }
 
-    const user = await findLostItemById(userId);
+    const user = await findUserById(userId);
 
-    if(user){
+    if (user) {
       req.user = toUserDto(user);
       res.locals.user = req.user;
     }
 
     next();
-  } catch(error) {
+  } catch (error) {
     next(error);
   }
 };
