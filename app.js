@@ -3,6 +3,9 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import { pageRouter, apiRouter } from "./routes/lostItemsRoutes.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
+import { createSessionMiddleware } from "./config/session.js";
+import { attachUser } from "./middleware/attachUser.js";
+import authRouter from "./routes/authRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,7 +21,10 @@ app.use(
   "/vendor/htmx",
   express.static(path.join(__dirname, "node_modules/htmx.org/dist")),
 );
+app.use(createSessionMiddleware());
+app.use(attachUser);
 
+app.use("/auth", authRouter);
 app.use("/api/lost-items", apiRouter);
 app.use("/", pageRouter);
 app.use(notFoundHandler);
