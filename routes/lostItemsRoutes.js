@@ -40,7 +40,7 @@ pageRouter.delete(
 
 export const apiRouter = Router();
 
-apiRouter.get("/", requireLogin, asyncHandler(listLostItemsApi));
+apiRouter.get("/", asyncHandler(listLostItemsApi));
 apiRouter.post("/", requireLogin, asyncHandler(createLostItemApi));
 apiRouter.get("/:id", asyncHandler(getLostItemApi));
 apiRouter.patch("/:id", requireLogin, asyncHandler(updateLostItemApi));
