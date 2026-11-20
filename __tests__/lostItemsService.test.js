@@ -1,4 +1,4 @@
-import { jest, beforeEach } from "@jest/globals";
+import { jest, beforeEach, test, expect } from "@jest/globals";
 
 const mockInsertLostItem = jest.fn();
 const mockFindAllLostItems = jest.fn();
@@ -31,6 +31,12 @@ const input = {
   dateLost: "2026-10-12",
 };
 
+const currentUser = {
+  id: "012345678",
+  email: "dat@example.com",
+  role: "user",
+};
+
 beforeEach(() => {
   jest.resetAllMocks();
 
@@ -54,7 +60,7 @@ describe("Input validation", () => {
     ["array", []],
     ["boolean", true],
   ])("rejects %s input", async (_, wrongInput) => {
-    const result = await createLostItem(wrongInput);
+    const result = await createLostItem(wrongInput, currentUser);
 
     expect(result).toEqual({
       ok: false,
@@ -71,7 +77,7 @@ describe("Required fields", () => {
     const wrongInput = { ...input };
     delete wrongInput[field];
 
-    const result = await createLostItem(wrongInput);
+    const result = await createLostItem(wrongInput, currentUser);
 
     expect(result).toEqual({
       ok: false,
@@ -84,7 +90,7 @@ describe("Required fields", () => {
     const result = await createLostItem({
       ...input,
       [field]: "",
-    });
+    }, currentUser);
 
     expect(result.error).toBe(`${field} is required`);
     expect(mockInsertLostItem).not.toHaveBeenCalled();
@@ -94,7 +100,7 @@ describe("Required fields", () => {
     const result = await createLostItem({
       ...input,
       [field]: "   ",
-    });
+    }, currentUser);
 
     expect(result.error).toBe(`${field} is required`);
     expect(mockInsertLostItem).not.toHaveBeenCalled();
@@ -104,7 +110,7 @@ describe("Required fields", () => {
     const result = await createLostItem({
       ...input,
       [field]: 123,
-    });
+    }, currentUser);
 
     expect(result.error).toBe(`${field} is required`);
     expect(mockInsertLostItem).not.toHaveBeenCalled();
@@ -126,7 +132,7 @@ describe("Required field length limits", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(min - 1),
-      });
+      }, currentUser);
 
       expect(result.error).toBe(
         `${field} must be between ${min} and ${max} characters`
@@ -141,7 +147,7 @@ describe("Required field length limits", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(max + 1),
-      });
+      }, currentUser);
 
       expect(result.error).toBe(
         `${field} must be between ${min} and ${max} characters`
@@ -156,7 +162,7 @@ describe("Required field length limits", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(min),
-      });
+      }, currentUser);
 
       expect(result.ok).toBe(true);
       expect(mockInsertLostItem).toHaveBeenCalledTimes(1);
@@ -169,7 +175,7 @@ describe("Required field length limits", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(max),
-      });
+      }, currentUser);
 
       expect(result.ok).toBe(true);
       expect(mockInsertLostItem).toHaveBeenCalledTimes(1);
@@ -193,7 +199,7 @@ describe("Date validation", () => {
     const result = await createLostItem({
       ...input,
       dateLost,
-    });
+    }, currentUser);
 
     expect(result).toEqual({
       ok: false,
@@ -209,7 +215,7 @@ describe("Date validation", () => {
     const result = await createLostItem({
       ...input,
       dateLost: future.toISOString().slice(0, 10),
-    });
+    }, currentUser);
 
     expect(result.error).toBe("dateLost cannot be in the future");
     expect(mockInsertLostItem).not.toHaveBeenCalled();
@@ -219,7 +225,7 @@ describe("Date validation", () => {
     const result = await createLostItem({
       ...input,
       dateLost: "2024-02-29",
-    });
+    }, currentUser);
 
     expect(result.ok).toBe(true);
     expect(mockInsertLostItem).toHaveBeenCalledWith(
@@ -240,7 +246,7 @@ describe("Optional fields", () => {
   test.each(limits)(
     "defaults omitted %s to empty string",
     async (field) => {
-      const result = await createLostItem(input);
+      const result = await createLostItem(input, currentUser);
 
       expect(result.ok).toBe(true);
       expect(mockInsertLostItem).toHaveBeenCalledWith(
@@ -255,7 +261,7 @@ describe("Optional fields", () => {
       const result = await createLostItem({
         ...input,
         [field]: 123,
-      });
+      }, currentUser);
 
       expect(result.error).toBe(`${field} must be a string`);
       expect(mockInsertLostItem).not.toHaveBeenCalled();
@@ -268,7 +274,7 @@ describe("Optional fields", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(max + 1),
-      });
+      }, currentUser);
 
       expect(result.error).toBe(
         `${field} must be at most ${max} characters`
@@ -283,7 +289,7 @@ describe("Optional fields", () => {
       const result = await createLostItem({
         ...input,
         [field]: "a".repeat(max),
-      });
+      }, currentUser);
 
       expect(result.ok).toBe(true);
       expect(mockInsertLostItem).toHaveBeenCalledTimes(1);
@@ -297,7 +303,7 @@ describe("Service behavior", () => {
       ...input,
       title: "  Lost Racket  ",
       color: "  Black  ",
-    });
+    }, currentUser);
 
     expect(result.ok).toBe(true);
     expect(mockInsertLostItem).toHaveBeenCalledWith(
@@ -315,7 +321,7 @@ describe("Service behavior", () => {
       status: "closed",
       createdAt: "2020-01-01",
       updatedAt: "2020-01-01",
-    });
+    }, currentUser);
 
     const savedData = mockInsertLostItem.mock.calls[0][0];
 
@@ -329,7 +335,7 @@ describe("Service behavior", () => {
     const savedItem = { _id: "saved-123", title: "Saved item" };
     mockInsertLostItem.mockResolvedValue(savedItem);
 
-    const result = await createLostItem(input);
+    const result = await createLostItem(input, currentUser);
 
     expect(result).toEqual({
       ok: true,
@@ -341,7 +347,7 @@ describe("Service behavior", () => {
   test("propagates unexpected repository errors", async () => {
     mockInsertLostItem.mockRejectedValue(new Error("Database unavailable"));
 
-    await expect(createLostItem(input)).rejects.toThrow(
+    await expect(createLostItem(input, currentUser)).rejects.toThrow(
       "Database unavailable"
     );
   });
@@ -374,6 +380,32 @@ describe("Service behavior", () => {
 
     await expect(getAllLostItems()).rejects.toThrow(
       "Database unavailable"
+    );
+  });
+
+  test("rejects unauthenticated creation", async () => {
+    const result = await createLostItem(input);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Authentication required",
+    });
+
+    expect(mockInsertLostItem).not.toHaveBeenCalled();
+  });
+
+  test("uses authenticatied user as owner", async () => {
+    await createLostItem(
+      {...input,
+        owner: "012345678",
+      },
+      currentUser
+    );
+
+    expect(mockInsertLostItem).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: currentUser.id,
+      })
     );
   });
 });

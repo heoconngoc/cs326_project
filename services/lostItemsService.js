@@ -22,14 +22,22 @@ const editableFields = [
   "brand",
 ];
 
-export const createLostItem = async (input) => {
+export const createLostItem = async (input, currentUser) => {
+  if(!currentUser?.id){
+    return Err("Authentication required");
+  }
+
   const validation = validateLostItem(input);
 
   if (!validation.ok) {
     return validation;
   }
 
-  const item = await insertLostItem(validation.value);
+  const item = await insertLostItem({
+    ...validation.value,
+    owner: currentUser.id,
+  });
+
   return Ok(item);
 };
 

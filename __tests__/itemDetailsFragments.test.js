@@ -14,6 +14,20 @@ jest.unstable_mockModule("../services/lostItemsService.js", () => ({
   deleteLostItem: mockDeleteLostItem,
 }));
 
+const testUser = {
+  id: "012345678",
+  email: "dat@example.com",
+  role: "user",
+};
+
+jest.unstable_mockModule("../middleware/attachUser.js", () => ({
+  attachUser: (req, res, next) => {
+    req.user = testUser;
+    res.locals.user = testUser;
+    next();
+  },
+}));
+
 const { default: app } = await import("../app.js");
 const { Ok, Err } = await import("../utils/result.js");
 

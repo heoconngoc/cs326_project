@@ -22,7 +22,12 @@ const toPublicItem = (item) => ({
   createdAt: item.createdAt.toISOString(),
 });
 
-const resultStatus = (error) => (error === "Item not found" ? 404 : 400);
+const resultStatus = (error) => {
+  if(error === "Authentication required") return 401;
+  if(error === "Forbidden") return 403;
+  if(error === "Item not found") return 404;
+  return 400;
+};
 
 const sendResultError = (res, result) =>
   res.status(resultStatus(result.error)).json({
@@ -54,7 +59,7 @@ export const showNewLostItemForm = (req, res) => {
 };
 
 export const submitLostItemForm = async (req, res) => {
-  const result = await createLostItem(req.body);
+  const result = await createLostItem(req.body, req.user);
 
   if (!result.ok) {
     return res
@@ -68,7 +73,7 @@ export const submitLostItemForm = async (req, res) => {
 };
 
 export const createLostItemApi = async (req, res) => {
-  const result = await createLostItem(req.body);
+  const result = await createLostItem(req.body, req.user);
 
   if (!result.ok) {
     return res.status(400).json({ success: false, error: result.error });
