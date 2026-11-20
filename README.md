@@ -215,81 +215,78 @@ npm test
 The app uses a Routes → Controller → Service → Repository layering.
 
 ```
-Browser
+Browser (EJS pages, HTMX, JSON API)
   |
+  | GET /lost-items, GET /lost-items/:id
+  | POST /auth/signup, POST /auth/login, POST /auth/logout
   | POST /lost-items, PATCH /lost-items/:id, DELETE /lost-items/:id
-  | (sent by HTMX; an HTML fragment comes back)
-  | GET /lost-items/:id (full details page)
   v
 server.js
-(connects with config/database.js, then starts the app)
+(connects to MongoDB and starts the app)
   |
   v
 app.js
-(Express app: static files, JSON/urlencoded
-parsing, mounts routers, 404 handler, and error-handling middleware)
-  |
+(Express app, session middleware, routers, error handler)
   |
   v
-routes/lostItemsRoutes.js
-(maps paths to controller functions, no logic)
+middleware/attachUser.js
+(loads the logged-in user from the session)
   |
-  |
-  v
-controllers/lostItemsController.js
-(reads the request, calls the service, shapes the response)
-  |
-  |
-  v
-services/lostItemsService.js  <-- __tests__/lostItemsService.test.js (Jest)
-(Validation and business rules for the feature)
-(uses utils/validateLostItem.js and utils/result.js)
-  |
-  |
-  v
-repositories/lostItemsRepository.js
-(the only layer that reads/writes storage; mocked in the service test)
-  |
-  |
-  v
-models/LostItem.js
-  |
-  |
-  v
-MongoDB
-(collection: "lostitems")
+  +-------------------------------+
+  |                               |
+  v                               v
+Authentication                 Lost Items
+  |                               |
+  v                               v
+authRoutes.js                 lostItemsRoutes.js
+  |                          (requireLogin for
+  |                           create/edit/delete)
+  v                               |
+authController.js                 v
+  |                          lostItemsController.js
+  v                               |
+authService.js                    v
+  |                          lostItemsService.js
+  |                          (validation, owner/admin
+  |                           permission checks)
+  |                               |
+  v                               v
+User model                 lostItemsRepository.js
+  |                               |
+  |                               v
+  |                         LostItem model
+  |                               |
+  +---------------+---------------+
+                  |
+                  v
+                MongoDB
+          (users, lostitems)
 ```
+
 
 **Tests (Jest)**
 
-```text
-__tests__/lostItemsService.test.js
-  -> tests services/lostItemsService.js
-  -> mocks repositories/lostItemsRepository.js
-     using jest.unstable_mockModule
+We use Jest to test the main features without connecting to MongoDB.
 
-__tests__/htmxFragments.test.js
-  -> tests POST /lost-items and HTML fragments
-  -> mocks services/lostItemsService.js
+- Service tests: Test lost item operations, validation, and
+  authorization rules (owner, admin, and other users).
+- Authentication tests: Test signup, login, logout, and sessions.
+- Route and HTMX tests: Test API responses, HTML fragments,
+  and error handling.
+- Accessibility tests: Check that pages and forms meet basic
+  accessibility requirements.
 
-__tests__/itemDetailsFragments.test.js
-  -> tests GET, PATCH, DELETE /lost-items/:id
-  -> tests validation errors and HTML fragments
-  -> mocks services/lostItemsService.js
-```
+Run all tests with `npm test`.
 
-All tests can run without a MongoDB connection using `npm test`.
-
-- A page load (e.g. `GET /lost-items`) flows
-  `Browser → app.js → pageRouter → controller → service → repository → MongoDB`,
-  then the controller renders an EJS view and returns HTML.
-- A form submit flows `Browser (htmx) → app.js → pageRouter → controller →
-service → repository → MongoDB`, and the controller renders a small EJS
-  fragment from `views/fragments/` that htmx swaps into the page.
-- The JSON API (`POST /api/lost-items`) takes the same path through `apiRouter`
-  and the controller returns JSON instead.
-- If any layer throws, the wrapped async handler forwards the error to the
-  error-handling middleware in `middleware/errorHandler.js`.
+- A page load (`GET /lost-items`) goes through the router, controller,
+  service, and repository. The controller renders an EJS page.
+- Signup and login go through the auth routes, controller, and service.
+  After login, the session is used to identify the current user.
+- For create, edit, and delete requests, `requireLogin` checks if the
+  user is logged in. The service also checks ownership or admin
+  permissions before allowing edits or deletes.
+- HTMX requests return HTML fragments, while API requests return JSON.
+- Errors are handled by `middleware/errorHandler.js`.
 
 ## Sprint 3: HTMX and Tailwind
 
@@ -360,6 +357,13 @@ One design decision I made in Sprint 3 was to test the service layer with Jest b
 I chose the mocked repository because `npm test` must pass with no database running, the suite runs in under a second, and each service rule — required fields, invalid `_id`, not found, update/delete — can be triggered without seeding data.
 
 The cost is that the mock can drift from real Mongoose behavior, for example around `findByIdAndUpdate` options. To cover that, I still checked the real repository manually against MongoDB: created an item through the API, restarted the server, fetched it by id, and deleted it. The integration-test alternative would catch that drift automatically, but it would add a database dependency to CI and make the suite slower.
+
+**Sprint 4:**
+For sprint 4, I decided to put the authorization checks in the service layer instead of the controllers. At first, I considered checking permissions in each controller, but our project has both API and HTMX routes. This means I would have to write similar checks in multiple places, and it would be easy to miss one.
+
+I think it would be better to keep these checks in one place. The routes check if a user is logged in, and the service checks if they own the item or have the admin role before allowing them to modify or delete it. It made the test easier because I could test the service directly without running database.
+
+On the other hand, the downside is I now have to pass the current user to the service from each controller, change all the test to match the new arguments. It takes more work, but I think it is worth it because the code is easier to maintain and the permission rules are consistent.
 
 ### Jerry Chen (@Jerry605185):
 
