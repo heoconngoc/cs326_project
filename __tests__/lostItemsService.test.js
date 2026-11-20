@@ -1,4 +1,4 @@
-import { jest, beforeEach, test, expect } from "@jest/globals";
+import { jest, beforeEach, test, expect, describe } from "@jest/globals";
 
 const mockInsertLostItem = jest.fn();
 const mockFindAllLostItems = jest.fn();
@@ -622,3 +622,106 @@ describe("Delete by ID", () => {
     );
   });
 });
+
+
+describe("Authorization", () => {
+  const otherUser = {
+    id: "0987654321",
+    role: "user",
+  };
+
+  const adminUser = {
+    id: "6868686868",
+    role: "admin",
+  };
+
+  beforeEach(() => {
+    mockFindLostItemById.mockResolvedValue(existingItem);
+    mockUpdateLostItemById.mockResolvedValue(existingItem);
+    mockRemoveLostItemById.mockResolvedValue(existingItem);
+  });
+
+  test("normal user cannot update an item not belongs to them", async () => {
+    const result = await updateLostItem(
+      validId, {location: "Library"}, otherUser
+    );
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Forbidden",
+    });
+
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("normal user cannot delete an item not belongs to them", async () => {
+    const result = await deleteLostItem(validId, otherUser);
+
+    expect(result).toEqual({
+      ok: false,
+      error: "Forbidden",
+    });
+
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("admin can update an item not belongs to them", async () => {
+    const result = await updateLostItem(
+      validId, {location: "Library"}, adminUser
+    );
+
+    expect(result.ok).toBe(true);
+    expect(mockUpdateLostItemById).toHaveBeenCalled();
+  });
+
+  test("admin can delete an item not belongs to them", async () => {
+    const result = await deleteLostItem(validId, adminUser);
+
+    expect(result.ok).toBe(true);
+    expect(mockRemoveLostItemById).toHaveBeenCalledWith(validId);
+  });
+
+  test("guest cannot update an item", async () => {
+    const result = await updateLostItem(
+      validId,
+      { location: "Library" }
+    );
+
+    expect(result.error).toBe("Authentication required");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("guest cannot delete an item", async () => {
+    const result = await deleteLostItem(validId);
+
+    expect(result.error).toBe("Authentication required");
+    expect(mockRemoveLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("normal user cannot modify legacy item without owner", async () => {
+    mockFindLostItemById.mockResolvedValue({
+      ...existingItem,
+      owner: undefined,
+    });
+
+    const result = await updateLostItem(
+      validId,
+      { location: "Library" },
+      currentUser
+    );
+
+    expect(result.error).toBe("Forbidden");
+    expect(mockUpdateLostItemById).not.toHaveBeenCalled();
+  });
+
+  test("admin can delete legacy item without owner", async () => {
+    mockFindLostItemById.mockResolvedValue({
+      ...existingItem,
+      owner: undefined,
+    });
+
+    const result = await deleteLostItem(validId, adminUser);
+
+    expect(result.ok).toBe(true);
+  });
+})

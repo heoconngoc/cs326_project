@@ -181,6 +181,7 @@ describe("PATCH /lost-items/:id (HTMX edit)", () => {
     expect(mockUpdateLostItem).toHaveBeenCalledWith(
       ID,
       expect.objectContaining({ title: "Blue umbrella" }),
+      testUser
     );
   });
 
@@ -245,7 +246,7 @@ describe("DELETE /lost-items/:id (HTMX delete)", () => {
     expect(res.headers.get("hx-redirect")).toBe("/lost-items");
     expect(html).toContain("deleted");
     expect(html).not.toMatch(/<html|<body/i);
-    expect(mockDeleteLostItem).toHaveBeenCalledWith(ID);
+    expect(mockDeleteLostItem).toHaveBeenCalledWith(ID, testUser);
   });
 
   test("404: already deleted shows an error fragment and no redirect", async () => {

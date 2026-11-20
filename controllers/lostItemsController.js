@@ -102,7 +102,7 @@ export const getLostItemApi = async (req, res) => {
 };
 
 export const updateLostItemApi = async (req, res) => {
-  const result = await updateLostItem(req.params.id, req.body);
+  const result = await updateLostItem(req.params.id, req.body, req.user);
 
   if (!result.ok) {
     return sendResultError(res, result);
@@ -115,7 +115,7 @@ export const updateLostItemApi = async (req, res) => {
 };
 
 export const deleteLostItemApi = async (req, res) => {
-  const result = await deleteLostItem(req.params.id);
+  const result = await deleteLostItem(req.params.id, req.user);
 
   if (!result.ok) {
     return sendResultError(res, result);
@@ -131,7 +131,7 @@ export const deleteLostItemApi = async (req, res) => {
 // with a fragment: the saved confirmation (the updated card rides along as an
 // out-of-band swap) or the error message with the right status.
 export const submitLostItemEdit = async (req, res) => {
-  const result = await updateLostItem(req.params.id, req.body);
+  const result = await updateLostItem(req.params.id, req.body, req.user);
 
   if (!result.ok) {
     return res
@@ -150,7 +150,7 @@ export const submitLostItemEdit = async (req, res) => {
 // HX-Redirect makes htmx send the browser to the list, where the item is gone.
 // The fragment is what other callers (for example curl) see.
 export const submitLostItemDelete = async (req, res) => {
-  const result = await deleteLostItem(req.params.id);
+  const result = await deleteLostItem(req.params.id, req.user);
 
   if (!result.ok) {
     return res
