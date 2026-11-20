@@ -1,7 +1,10 @@
 <%
+  // active: which nav item is current. user: set by attachUser when logged in.
   const navLink = (name) => active === name
     ? 'bg-red-50 text-red-900'
     : 'text-stone-600 hover:bg-stone-100 hover:text-stone-900';
+  const current = (name) => active === name ? ' aria-current="page"' : '';
+  const currentUser = typeof user !== 'undefined' && user ? user : null;
 %>
 <!DOCTYPE html>
 <html lang="en">
@@ -10,20 +13,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= title %> · Lost n Found</title>
   <link rel="stylesheet" href="/css/tailwind.css">
-  <% if (typeof useHtmx !== 'undefined' && useHtmx) { %>
-    <%# Swap 4xx/5xx responses too, so the server's error fragment is shown. %>
-    <meta name="htmx-config" content='{"timeout":15000,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}'>
-    <script src="/vendor/htmx/htmx.min.js" defer></script>
-  <% } %>
+  <%# htmx is on every page: the Log out button in the header needs it. %>
+  <%# Swap 4xx/5xx responses too, so the server's error fragment is shown. %>
+  <meta name="htmx-config" content='{"timeout":15000,"responseHandling":[{"code":"204","swap":false},{"code":"[23]..","swap":true},{"code":"[45]..","swap":true,"error":true},{"code":"...","swap":false}]}'>
+  <script src="/vendor/htmx/htmx.min.js" defer></script>
 </head>
 <body class="flex min-h-screen flex-col bg-stone-50 text-stone-900 antialiased">
+  <%# First tab stop on every page; visible only while it has keyboard focus. %>
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-red-900 focus:px-4 focus:py-2 focus:font-semibold focus:text-white">Skip to main content</a>
   <header class="border-b border-stone-200 bg-white">
     <div class="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <a href="/" class="text-lg font-bold tracking-tight text-red-900">Lost n Found</a>
-      <nav class="-mx-2 flex gap-1 text-sm font-medium sm:mx-0" aria-label="Main">
-        <a href="/lost-items" class="rounded-md px-3 py-2 <%= navLink('lost-items') %>">Lost Items</a>
-        <a href="/lost-items/new" class="rounded-md px-3 py-2 <%= navLink('new') %>">Report an Item</a>
+      <nav class="-mx-2 flex flex-wrap items-center gap-1 text-sm font-medium sm:mx-0" aria-label="Main">
+        <a href="/lost-items" class="rounded-md px-2.5 py-2 sm:px-3 <%= navLink('lost-items') %>"<%- current('lost-items') %>>Lost Items</a>
+        <a href="/lost-items/new" class="rounded-md px-2.5 py-2 sm:px-3 <%= navLink('new') %>"<%- current('new') %>>Report an Item</a>
+        <% if (currentUser) { %>
+          <span class="max-w-40 truncate px-2 py-2 sm:max-w-48 text-stone-600" title="<%= currentUser.email %>"><span class="sr-only">Signed in as </span><%= currentUser.email %></span>
+          <form id="logout-form" action="/auth/logout" method="post" hx-post="/auth/logout" hx-sync="this:drop">
+            <button type="submit" class="rounded-md px-2.5 py-2 sm:px-3 font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-900">Log out</button>
+          </form>
+        <% } else { %>
+          <a href="/login" class="rounded-md px-2.5 py-2 sm:px-3 <%= navLink('login') %>"<%- current('login') %>>Log in</a>
+          <a href="/signup" class="rounded-md px-2.5 py-2 sm:px-3 <%= active === 'signup' ? 'bg-red-950 text-white' : 'bg-red-900 text-white hover:bg-red-950' %>"<%- current('signup') %>>Sign up</a>
+        <% } %>
       </nav>
     </div>
   </header>
-  <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:py-10">
+  <main id="main" tabindex="-1" class="mx-auto w-full max-w-5xl flex-1 px-4 py-8 focus:outline-none sm:py-10">
