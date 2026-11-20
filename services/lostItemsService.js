@@ -12,7 +12,7 @@ import { Ok, Err } from "../utils/result.js";
 const isValidId = (id) =>
   typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
 
-const canMangageItem = (item, currentUser) => {
+const canManageItem = (item, currentUser) => {
   if(!currentUser?.id) {
     return false;
   }
@@ -105,7 +105,7 @@ export const updateLostItem = async (id, updates, currentUser) => {
     return Err("Item not found");
   }
 
-  if(!canMangageItem(existing, currentUser)){
+  if(!canManageItem(existing, currentUser)){
     return Err("Forbidden");
   }
 
@@ -160,7 +160,7 @@ export const deleteLostItem = async (id, currentUser) => {
     return Err("Item not found");
   }
 
-  if(!canMangageItem(existing, currentUser)){
+  if(!canManageItem(existing, currentUser)){
     return Err("Forbidden");
   }
 

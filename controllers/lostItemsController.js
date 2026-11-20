@@ -63,7 +63,7 @@ export const submitLostItemForm = async (req, res) => {
 
   if (!result.ok) {
     return res
-      .status(400)
+      .status(resultStatus(result.error))
       .render("fragments/form-error", { message: result.error });
   }
 
@@ -76,7 +76,7 @@ export const createLostItemApi = async (req, res) => {
   const result = await createLostItem(req.body, req.user);
 
   if (!result.ok) {
-    return res.status(400).json({ success: false, error: result.error });
+    return sendResultError(res, result);
   }
 
   res.status(201).json({ success: true, data: toPublicItem(result.value) });

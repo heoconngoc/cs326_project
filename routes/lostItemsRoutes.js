@@ -20,6 +20,8 @@ export const pageRouter = Router();
 
 pageRouter.get("/", showHomePage);
 pageRouter.get("/lost-items", asyncHandler(showLostItemsPage));
+
+// "/lost-items/new" must stay above "/lost-items/:id", or "new" is read as an id.
 pageRouter.get("/lost-items/new", requireLogin, showNewLostItemForm);
 pageRouter.post(
   "/lost-items",
