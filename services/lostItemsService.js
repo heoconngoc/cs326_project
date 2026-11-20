@@ -12,6 +12,20 @@ import { Ok, Err } from "../utils/result.js";
 const isValidId = (id) =>
   typeof id === "string" && /^[0-9a-fA-F]{24}$/.test(id);
 
+const canManageItem = (item, currentUser) => {
+  if(!currentUser?.id) {
+    return false;
+  }
+
+  if(currentUser.role === "admin"){
+    return true;
+  }
+
+  return (
+    item.owner != null && String(item.owner) === String(currentUser.id)
+  );
+};
+
 const editableFields = [
   "title",
   "description",
@@ -22,14 +36,22 @@ const editableFields = [
   "brand",
 ];
 
-export const createLostItem = async (input) => {
+export const createLostItem = async (input, currentUser) => {
+  if(!currentUser?.id){
+    return Err("Authentication required");
+  }
+
   const validation = validateLostItem(input);
 
   if (!validation.ok) {
     return validation;
   }
 
-  const item = await insertLostItem(validation.value);
+  const item = await insertLostItem({
+    ...validation.value,
+    owner: currentUser.id,
+  });
+
   return Ok(item);
 };
 
@@ -51,7 +73,11 @@ export const getLostItemById = async (id) => {
   return Ok(item);
 };
 
-export const updateLostItem = async (id, updates) => {
+export const updateLostItem = async (id, updates, currentUser) => {
+  if(!currentUser?.id){
+    return Err("Authentication required");
+  }
+
   if (!isValidId(id)) {
     return Err("Invalid item ID");
   }
@@ -77,6 +103,10 @@ export const updateLostItem = async (id, updates) => {
 
   if (!existing) {
     return Err("Item not found");
+  }
+
+  if(!canManageItem(existing, currentUser)){
+    return Err("Forbidden");
   }
 
   const merged = {
@@ -115,9 +145,23 @@ export const updateLostItem = async (id, updates) => {
   return Ok(updated);
 };
 
-export const deleteLostItem = async (id) => {
+export const deleteLostItem = async (id, currentUser) => {
+  if(!currentUser?.id){
+    return Err("Authentication required");
+  }
+
   if (!isValidId(id)) {
     return Err("Invalid item ID");
+  }
+
+  const existing = await findLostItemById(id);
+
+  if(!existing){
+    return Err("Item not found");
+  }
+
+  if(!canManageItem(existing, currentUser)){
+    return Err("Forbidden");
   }
 
   const removed = await removeLostItemById(id);

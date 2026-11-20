@@ -1,4 +1,3 @@
-
 import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
 import request from "supertest";
 
@@ -14,6 +13,21 @@ jest.unstable_mockModule("../services/lostItemsService.js", () => ({
   getLostItemById: mockGetLostItemById,
   updateLostItem: mockUpdateLostItem,
   deleteLostItem: mockDeleteLostItem,
+}));
+
+const testUser = {
+  id: "012345678",
+  email: "dat@example.com",
+  role: "user",
+};
+
+
+jest.unstable_mockModule("../middleware/attachUser.js", () => ({
+  attachUser: (req, res, next) => {
+    req.user = testUser;
+    res.locals.user = testUser;
+    next();
+  },
 }));
 
 const { default: app } = await import("../app.js");
@@ -87,6 +101,7 @@ describe("POST /lost-items (HTMX form submit)", () => {
     expect(html).toContain("submitted");
     expect(mockCreateLostItem).toHaveBeenCalledWith(
       expect.objectContaining({ title: "Green umbrella" }),
+      testUser
     );
   });
 

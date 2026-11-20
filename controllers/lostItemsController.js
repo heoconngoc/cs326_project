@@ -22,7 +22,12 @@ const toPublicItem = (item) => ({
   createdAt: item.createdAt.toISOString(),
 });
 
-const resultStatus = (error) => (error === "Item not found" ? 404 : 400);
+const resultStatus = (error) => {
+  if(error === "Authentication required") return 401;
+  if(error === "Forbidden") return 403;
+  if(error === "Item not found") return 404;
+  return 400;
+};
 
 const sendResultError = (res, result) =>
   res.status(resultStatus(result.error)).json({
@@ -54,11 +59,11 @@ export const showNewLostItemForm = (req, res) => {
 };
 
 export const submitLostItemForm = async (req, res) => {
-  const result = await createLostItem(req.body);
+  const result = await createLostItem(req.body, req.user);
 
   if (!result.ok) {
     return res
-      .status(400)
+      .status(resultStatus(result.error))
       .render("fragments/form-error", { message: result.error });
   }
 
@@ -68,10 +73,10 @@ export const submitLostItemForm = async (req, res) => {
 };
 
 export const createLostItemApi = async (req, res) => {
-  const result = await createLostItem(req.body);
+  const result = await createLostItem(req.body, req.user);
 
   if (!result.ok) {
-    return res.status(400).json({ success: false, error: result.error });
+    return sendResultError(res, result);
   }
 
   res.status(201).json({ success: true, data: toPublicItem(result.value) });
@@ -97,7 +102,7 @@ export const getLostItemApi = async (req, res) => {
 };
 
 export const updateLostItemApi = async (req, res) => {
-  const result = await updateLostItem(req.params.id, req.body);
+  const result = await updateLostItem(req.params.id, req.body, req.user);
 
   if (!result.ok) {
     return sendResultError(res, result);
@@ -110,7 +115,7 @@ export const updateLostItemApi = async (req, res) => {
 };
 
 export const deleteLostItemApi = async (req, res) => {
-  const result = await deleteLostItem(req.params.id);
+  const result = await deleteLostItem(req.params.id, req.user);
 
   if (!result.ok) {
     return sendResultError(res, result);
@@ -126,7 +131,7 @@ export const deleteLostItemApi = async (req, res) => {
 // with a fragment: the saved confirmation (the updated card rides along as an
 // out-of-band swap) or the error message with the right status.
 export const submitLostItemEdit = async (req, res) => {
-  const result = await updateLostItem(req.params.id, req.body);
+  const result = await updateLostItem(req.params.id, req.body, req.user);
 
   if (!result.ok) {
     return res
@@ -145,7 +150,7 @@ export const submitLostItemEdit = async (req, res) => {
 // HX-Redirect makes htmx send the browser to the list, where the item is gone.
 // The fragment is what other callers (for example curl) see.
 export const submitLostItemDelete = async (req, res) => {
-  const result = await deleteLostItem(req.params.id);
+  const result = await deleteLostItem(req.params.id, req.user);
 
   if (!result.ok) {
     return res
