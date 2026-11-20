@@ -24,6 +24,12 @@ app.use(
 app.use(createSessionMiddleware());
 app.use(attachUser);
 
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+  });
+});
+
 app.use("/auth", authRouter);
 app.use("/api/lost-items", apiRouter);
 app.use("/", pageRouter);
