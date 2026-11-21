@@ -1,7 +1,3 @@
-// Pages for the auth forms. The forms post to the JSON-first /auth endpoints
-// (see authController.js), which answer HTMX requests with HTML fragments.
-
-// A logged-in user has nothing to do on these pages, so send them to the list.
 export const showLoginPage = (req, res) => {
   if (req.user) {
     return res.redirect("/lost-items");

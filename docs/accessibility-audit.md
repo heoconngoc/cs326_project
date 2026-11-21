@@ -34,12 +34,14 @@ below follow standard patterns for screen readers, but they were not listened to
 | 7 | The red `*` for required fields was read as "star" and never explained. | 3.3.2 Labels or Instructions | Review | The `*` is `aria-hidden`; the forms say "Fields marked * are required"; inputs keep the `required` attribute, which screen readers announce. |
 | 8 | Placeholder text (about 2.6:1 contrast on white) was hard to read. | 1.4.3 (placeholders are not covered by axe, so this was found by review) | Calculation | Placeholder color changed to a darker gray (about 4.8:1). |
 | 9 | Focus rings differed between element types. | 2.4.7 Focus Visible (it already passed) | Keyboard walk | One focus style for links, buttons and summaries (`src/input.css`). Inputs keep their own ring. |
+| 10 | After a successful **Delete** the browser loaded the list and focus started at the top of the page. | 2.4.3 Focus Order | Keyboard walk (Sprint 4 rubric review) | The redirect carries `?deleted=1`; the list shows `<div id="list-message" role="status" tabindex="-1" autofocus>` so focus and the screen reader start on "The report was deleted." |
 
 ### Already fine (no change needed)
 
 - Every form field has a visible `<label>`.
 - `<html lang="en">`, a unique `<title>` and exactly one `<h1>` on every page.
 - Landmarks: header, labelled nav, main, footer.
+- Contrast was measured on the rendered pages (text and background read from the browser, hover states included): every row is at least 4.5:1; the lowest is 7.3:1 (body text).
 - Every page passed axe with no violations at both sizes, including color contrast.
 - Every page works at 320 px wide and at 200% text size without horizontal scrolling.
 - The edit section uses a native `<details>`, and Delete confirms with the browser's own dialog. Both work with the keyboard.
@@ -51,7 +53,8 @@ below follow standard patterns for screen readers, but they were not listened to
 - **Native date input:** the browser's own date field takes several Tab presses (month, day, year). That is browser behavior.
 - **Delete confirmation:** it uses `window.confirm`. It is keyboard accessible, but it cannot be styled.
 - **Focus after a successful create or signup:** focus stays in the form and the success message is announced by the live region. If the team wants focus moved to the message, that is a one-line change.
-- **Edit and Delete for guests:** the details page still shows them to everyone. When the authorization branch merges, hide them for people who are not the owner or an admin, and make the 401 and 403 messages offer a "Log in" link.
+- **Focus after a successful delete (fixed in Sprint 4):** Delete redirects to `/lost-items?deleted=1`. The list shows a status message with `autofocus`, so focus lands on the message instead of the top of the page, and the next Tab reaches the first item.
+- **Edit and Delete buttons for people who are not the owner:** they are still shown. The server answers 403 with a plain message ("You can only change or delete items you reported.") and keyboard focus stays on the button. Hiding the buttons would be a good follow-up.
 - **No CSRF protection:** `sameSite: lax` cookies help, but this is not an accessibility item. It is worth a look in Sprint 4.
 
 ## How to repeat the audit

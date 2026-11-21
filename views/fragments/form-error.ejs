@@ -5,4 +5,7 @@
 <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
   <p class="font-semibold"><%= errorHeading %></p>
   <p class="mt-1 text-sm"><%= message.charAt(0).toUpperCase() + message.slice(1) %></p>
+  <% if (typeof linkHref !== 'undefined' && linkHref) { %>
+    <p class="mt-2 text-sm"><a class="font-medium underline" href="<%= linkHref %>"><%= linkText %></a></p>
+  <% } %>
 </div>
