@@ -1,4 +1,8 @@
+<%
+  // heading is optional so other forms (login, signup) can say what failed.
+  const errorHeading = typeof heading !== 'undefined' ? heading : "We couldn't submit your report.";
+%>
 <div role="alert" class="rounded-xl border border-red-200 bg-red-50 p-4 text-red-900">
-  <p class="font-semibold">We couldn't submit your report.</p>
+  <p class="font-semibold"><%= errorHeading %></p>
   <p class="mt-1 text-sm"><%= message.charAt(0).toUpperCase() + message.slice(1) %></p>
 </div>

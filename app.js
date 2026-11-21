@@ -6,6 +6,7 @@ import { notFoundHandler, errorHandler } from "./middleware/errorHandler.js";
 import { createSessionMiddleware } from "./config/session.js";
 import { attachUser } from "./middleware/attachUser.js";
 import authRouter from "./routes/authRoutes.js";
+import authPagesRouter from "./routes/authPagesRoutes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/auth", authRouter);
+app.use("/", authPagesRouter);
 app.use("/api/lost-items", apiRouter);
 app.use("/", pageRouter);
 app.use(notFoundHandler);

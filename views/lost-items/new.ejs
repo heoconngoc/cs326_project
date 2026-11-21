@@ -10,17 +10,19 @@
         hx-post="/lost-items"
         hx-target="#form-feedback"
         hx-swap="innerHTML show:#form-feedback:top"
-        hx-disabled-elt="find button[type='submit']"
+        hx-sync="this:drop"
         hx-on::after-request="if (event.detail.successful) this.reset()"
         hx-on::send-error="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-network-error').innerHTML"
         hx-on::timeout="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-timeout').innerHTML">
+    <p class="mb-4 text-sm text-stone-600">Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
+
     <div class="grid gap-5 md:grid-cols-2">
-      <%- include('../partials/item-fields', { values: {}, withContact: true }) %>
+      <%- include('../partials/item-fields', { values: {}, withContact: true, categories, today }) %>
     </div>
 
     <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
       <a class="rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-center font-semibold text-stone-800 hover:bg-stone-100" href="/lost-items">Cancel</a>
-      <button type="submit" class="rounded-lg bg-red-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-red-950 disabled:cursor-not-allowed disabled:opacity-60">
+      <button id="report-submit" type="submit" class="rounded-lg bg-red-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-red-950 group-[.htmx-request]:cursor-wait group-[.htmx-request]:opacity-60">
         <span class="group-[.htmx-request]:hidden">Submit</span>
         <span class="hidden group-[.htmx-request]:inline">Submitting…</span>
       </button>

@@ -1,0 +1,33 @@
+<%#
+  The edit form. show.ejs renders it on first load; item-updated.ejs renders it
+  again with oob = true so htmx replaces it after a save and the form shows what
+  the server stored (the service trims text, for example).
+  The Save button has an id so htmx can put keyboard focus back on it after the swap.
+%>
+<form
+  id="edit-item-form"
+  class="group border-t border-stone-200 p-4 sm:p-6"
+  hx-patch="/lost-items/<%= item.id %>"
+  hx-target="#form-feedback"
+  hx-swap="innerHTML show:#form-feedback:top"
+  hx-sync="this:drop"
+  hx-on::send-error="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-network-error').innerHTML"
+  hx-on::timeout="document.getElementById('form-feedback').innerHTML = document.getElementById('tpl-timeout').innerHTML"<%- typeof oob !== 'undefined' && oob ? '\n  hx-swap-oob="outerHTML"' : '' %>
+>
+  <p class="mb-4 text-sm text-stone-600">Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
+
+  <div class="grid gap-5 md:grid-cols-2">
+    <%- include('../partials/item-fields', { values: item, withContact: false, categories, today }) %>
+  </div>
+
+  <div class="mt-6 flex flex-col sm:flex-row sm:justify-end">
+    <button
+      id="edit-save"
+      type="submit"
+      class="rounded-lg bg-red-900 px-5 py-2.5 font-semibold text-white shadow-sm hover:bg-red-950 group-[.htmx-request]:cursor-wait group-[.htmx-request]:opacity-60"
+    >
+      <span class="group-[.htmx-request]:hidden">Save changes</span>
+      <span class="hidden group-[.htmx-request]:inline">Saving…</span>
+    </button>
+  </div>
+</form>

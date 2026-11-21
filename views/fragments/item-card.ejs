@@ -41,7 +41,7 @@
   </dl>
   <% if (linked) { %>
     <p class="mt-auto pt-4 text-sm">
-      <a class="font-medium text-red-900 underline" href="/lost-items/<%= item.id %>">View details</a>
+      <a class="font-medium text-red-900 underline" href="/lost-items/<%= item.id %>" aria-label="View details for <%= item.title %>">View details</a>
     </p>
   <% } %>
 </article>

@@ -171,6 +171,37 @@ Every card on the Lost Items list links to a details page for that report
 
 Edit and delete are open to every visitor. There is no login or owner check yet.
 
+### Sign up, Log in and Log out
+
+The header shows **Log in** and **Sign up** for guests, and the user's email and a
+**Log out** button after login.
+
+1. Open `/signup`, enter an email and a password (8-72 characters) and click **Sign up**.
+   HTMX sends `POST /auth/signup` and the page shows "Your account was created" with a link
+   to log in. Errors (invalid email, short password, email already registered) show under
+   the form.
+2. Open `/login`, enter the same email and password and click **Log in**. HTMX sends
+   `POST /auth/login`. On success the server starts a session and sends an
+   `HX-Redirect: /lost-items` header, so the next page already shows the user's email.
+   Wrong credentials show "Invalid email or password" and nothing changes.
+3. Click **Log out** in the header. HTMX sends `POST /auth/logout`, the session ends and
+   the browser goes to the home page.
+4. A logged-in user who opens `/login` or `/signup` is sent to the Lost Items list.
+
+The auth endpoints keep the JSON described in `docs/sprint-4-contract.md` for every caller
+except HTMX forms. When a request has the `HX-Request: true` header, the same endpoints
+answer with an HTML fragment (or an `HX-Redirect` header) instead. Edit and delete are still open to every
+visitor in this branch; hiding them from people who are not the owner comes with the
+authorization work.
+
+### Accessibility
+
+The whole app can be used with the keyboard: a "Skip to main content" link is the first tab
+stop, every field has a label, hints are linked to their fields, the current page is marked
+in the navigation, and keyboard focus is kept (or put back) after each HTMX action. The full
+audit, the problems found and how to repeat it are in
+[docs/accessibility-audit.md](docs/accessibility-audit.md).
+
 ## API Endpoints
 
 | Method | Endpoint              | Description                                                            | Success                                      |
@@ -182,6 +213,12 @@ Edit and delete are open to every visitor. There is no login or owner check yet.
 | GET    | `/lost-items/:id`     | Item details page with edit form and delete button                     | 200 HTML (400 / 404 error page)              |
 | PATCH  | `/lost-items/:id`     | Edit from HTMX; answers with a fragment (saved message + updated card) | 200 HTML fragment (400 / 404 error fragment) |
 | DELETE | `/lost-items/:id`     | Delete from HTMX; sets `HX-Redirect: /lost-items`                      | 200 HTML fragment (400 / 404 error fragment) |
+| GET    | `/login`              | Login page (redirects to `/lost-items` when already logged in)         | 200 HTML                                     |
+| GET    | `/signup`             | Signup page (redirects to `/lost-items` when already logged in)        | 200 HTML                                     |
+| POST   | `/auth/signup`        | Create an account. JSON by default; HTML fragment for HTMX forms       | 201 (400 / 409)                              |
+| POST   | `/auth/login`         | Log in. JSON by default; `HX-Redirect` for HTMX forms                  | 200 (400 / 401)                              |
+| POST   | `/auth/logout`        | Log out. JSON by default; `HX-Redirect: /` for HTMX forms              | 200                                          |
+| GET    | `/auth/me`            | The logged-in user as JSON                                             | 200 (401)                                    |
 | GET    | `/api/lost-items`     | List items as JSON, newest first                                       | 200 JSON                                     |
 | POST   | `/api/lost-items`     | Create a lost item                                                     | 201 JSON                                     |
 | GET    | `/api/lost-items/:id` | Get one item as JSON                                                   | 200 JSON (400 / 404)                         |
@@ -207,7 +244,9 @@ npm test
 - `__tests__/lostItemsService.test.js` — service rules; the repository is mocked with `jest.unstable_mockModule`.
 - `__tests__/htmxFragments.test.js` — HTMX routes and HTML fragments for the report form.
 - `__tests__/itemDetailsFragments.test.js` — details page, edit (`PATCH`) and delete (`DELETE`) fragments, error cases and the `HX-Redirect` header; the service is mocked.
-- No MongoDB is needed; all 117 tests pass with the database environment unset.
+- `__tests__/authPages.test.js` — login and signup pages, guest and logged-in navigation, and the fragments and `HX-Redirect` headers the auth endpoints send to HTMX forms; the services are mocked.
+- `__tests__/accessibility.test.js` — runs axe-core (through jsdom) on every page and checks the skip link, labels, hints, link names, unique ids and focus handling.
+- No MongoDB is needed; all tests pass with the database environment unset.
 - CI runs `npm test -- --ci` in `.github/workflows/test.yml`.
 
 ## System Diagram
@@ -332,7 +371,7 @@ The first prints the "saved" fragment, the second shows the `HX-Redirect: /lost-
 
 ## Limitations
 
-The application currently does not support authentication or authorization. Users do not need to log in to create, view, edit, or delete lost item reports. As a result, any visitor can modify or delete reports created by other users.
+Users can now sign up, log in and log out, but the application does not yet use the login to protect reports (authorization). Users do not need to log in to create, view, edit, or delete lost item reports. As a result, any visitor can modify or delete reports created by other users.
 
 This is a security limitation of the current implementation. We plan to address this in Sprint 4 by implementing authentication and authorization. Each lost item report will be associated with its owner, and only authorized users will be allowed to edit or delete their own reports.
 
