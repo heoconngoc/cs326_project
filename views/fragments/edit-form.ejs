@@ -1,9 +1,3 @@
-<%#
-  The edit form. show.ejs renders it on first load; item-updated.ejs renders it
-  again with oob = true so htmx replaces it after a save and the form shows what
-  the server stored (the service trims text, for example).
-  The Save button has an id so htmx can put keyboard focus back on it after the swap.
-%>
 <form
   id="edit-item-form"
   class="group border-t border-stone-200 p-4 sm:p-6"
