@@ -17,7 +17,7 @@
     <p class="mb-4 text-sm text-stone-600">Fields marked <span aria-hidden="true">*</span><span class="sr-only">with an asterisk</span> are required.</p>
 
     <div class="grid gap-5 md:grid-cols-2">
-      <%- include('../partials/item-fields', { values: {}, withContact: true }) %>
+      <%- include('../partials/item-fields', { values: {}, withContact: true, categories, today }) %>
     </div>
 
     <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
