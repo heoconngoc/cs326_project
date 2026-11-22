@@ -169,7 +169,9 @@ Every card on the Lost Items list links to a details page for that report
 4. `contact info` and `status` are not editable here because the service rejects
    them on update, and `contact info` is never shown on the page.
 
-Edit and delete are open to every visitor. There is no login or owner check yet.
+Reporting, editing and deleting need a login. Only the person who reported an item (or an
+admin) can edit or delete it; anyone else gets a 403 message. See
+[Authorization](#authorization-who-can-change-what).
 
 ### Sign up, Log in and Log out
 
@@ -190,40 +192,128 @@ The header shows **Log in** and **Sign up** for guests, and the user's email and
 
 The auth endpoints keep the JSON described in `docs/sprint-4-contract.md` for every caller
 except HTMX forms. When a request has the `HX-Request: true` header, the same endpoints
-answer with an HTML fragment (or an `HX-Redirect` header) instead. Edit and delete are still open to every
-visitor in this branch; hiding them from people who are not the owner comes with the
-authorization work.
+answer with an HTML fragment (or an `HX-Redirect` header) instead.
+
+**Which mechanism, and why.** We use server-side sessions (`express-session`) with the
+session stored in MongoDB (`connect-mongo`). The browser only holds a random session id in
+the `cs326.sid` cookie, signed with `SESSION_SECRET` (`httpOnly`, `sameSite=lax`, `secure` in
+production). Editing the cookie by hand breaks the signature, so the server treats the
+request as logged out. We chose sessions over JWTs because logout really ends the session
+(the server deletes it), nothing about the user (such as the role) is trusted from the
+client, and the role is read from the database on every request. Passwords are never stored:
+signup saves `bcrypt.hash(password, 10)` in `passwordHash` (not selected by default), and login
+uses `bcrypt.compare`.
+
+**Roles and the first admin.** `User.role` is `"user"` or `"admin"` and defaults to `"user"`.
+Signup ignores any `role` in the request, so everyone who signs up is an ordinary user. There is
+no admin signup. To make an admin, sign up normally, then promote that account in the database:
+
+```bash
+mongosh "$MONGODB_URI" --eval 'db.users.updateOne({ email: "admin@example.com" }, { $set: { role: "admin" } })'
+```
+
+Log out and log in again (or just reload) and the account is an admin.
+
+### Authorization: who can change what
+
+| Action                | Guest                    | Logged-in user       | Owner of the item | Admin |
+| --------------------- | ------------------------ | -------------------- | ----------------- | ----- |
+| View list and details | yes                      | yes                  | yes               | yes   |
+| Report an item        | login page (401 for API) | yes                  | yes               | yes   |
+| Edit / delete an item | login page (401 for API) | **403** if not owner | yes               | yes   |
+
+How it is built (route guard, then the rule in the service):
+
+- `requireLogin` (`middleware/requireLogin.js`) is on the routes that create, edit or delete.
+  A guest who opens a page is redirected to `/login`; an API or HTMX call gets a 401 and nothing
+  happens.
+- The service decides who may change what. `updateLostItem` and `deleteLostItem` in
+  `services/lostItemsService.js` load the item, then call `canManageItem(item,currentUser)`. If it
+  is false they return `Err("Forbidden")`, which the controller turns into a 403, before the
+  repository changes anything.
+- The owner is set by the server: `createLostItem` stores `owner: currentUser.id` from the
+  session and ignores any `owner` in the form or JSON.
+
+**Try it with two accounts** (for the admin check, make an admin first, see above):
+
+1. In a normal window sign up and log in as `alice@example.com`. Report an item.
+2. In a private window sign up and log in as `bob@example.com`. Open Alice's item (from the
+   list), open **Edit**, change the title and click **Save changes**. Result: a red message
+   "You can only change or delete items you reported." (403). Click **Delete** and confirm.
+   Same message. Reload: the item is unchanged.
+3. Back as Alice: edit and delete work (200).
+4. Log in as the admin: editing and deleting Alice's item works too.
+5. Optional, from a terminal with Bob's cookie jar:
+   `curl -i -b bob.txt -X DELETE http://localhost:3000/api/lost-items/<id>` returns
+   `HTTP/1.1 403` with `{"success":false,"error":"Forbidden"}`.
+
+The rule is also covered by Jest (`__tests__/lostItemsService.test.js`, section
+"Authorization (owner or admin)") with the repository mocked: a non-owner gets `Forbidden`
+and the repository is not called; the owner and an admin succeed.
+
+### Health check
+
+`GET /health` needs no login or cookie. It returns `200` with `Content-Type: application/json`:
+
+```bash
+curl -i http://localhost:3000/health
+# HTTP/1.1 200 OK
+# Content-Type: application/json; charset=utf-8
+# {"status":"ok"}
+```
 
 ### Accessibility
 
-The whole app can be used with the keyboard: a "Skip to main content" link is the first tab
-stop, every field has a label, hints are linked to their fields, the current page is marked
-in the navigation, and keyboard focus is kept (or put back) after each HTMX action. The full
-audit, the problems found and how to repeat it are in
-[docs/accessibility-audit.md](docs/accessibility-audit.md).
+The full audit (method, every finding, known limits) is in
+[docs/accessibility-audit.md](docs/accessibility-audit.md). What it found, what we fixed and
+how to check each fix:
+
+| Found                                                                         | Fix                                                                                           | How to check                                                                              |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| No way to skip the navigation                                                 | "Skip to main content" link, first tab stop                                                   | Press Tab once on any page: the link appears and Enter jumps to the content               |
+| Focus fell to the top of the page after **Save changes**                      | The Save button has an `id`, so htmx puts focus back on it                                    | Edit an item with the keyboard, press Enter on Save: the ring stays on Save               |
+| Focus was lost after a failed Delete (button was disabled during the request) | `hx-sync="this:drop"` replaces `hx-disabled-elt` on all forms                                 | Delete an item that is already gone: focus stays on Delete, the error is read out         |
+| Focus went to the top after a successful delete                               | Delete redirects to `/lost-items?deleted=1`; the list shows a status message that takes focus | Delete an item you own: focus is on "The report was deleted."; Tab goes to the first item |
+| Repeated "View details" links                                                 | `aria-label="View details for <title>"`                                                       | Tab through the list, or check the accessibility tree                                     |
+| Current page not announced                                                    | `aria-current="page"` in the nav                                                              | Inspect the active nav link                                                               |
+| Hints not tied to inputs; unexplained red `*`                                 | `aria-describedby`; `*` is `aria-hidden` and the form says "Fields marked \* are required"    | Inspect the input; run a screen reader                                                    |
+| Placeholder text was about 2.6:1                                              | Darker placeholder (about 4.8:1)                                                              | Axe DevTools or a contrast checker on a form                                              |
+| Different focus rings on links, buttons, summaries                            | One focus style in `src/input.css`                                                            | Tab through any page: every stop has the same visible ring                                |
+
+Already fine: every input has a real `<label>`, one `<h1>` per page, landmarks, `lang`, and
+no horizontal scrolling at 320 px.
+
+Contrast was measured on the rendered pages in Chromium (text and background colors read from
+the page, hover included). Every row is at least 4.5:1: body text 7.3:1, nav links 7.6:1 (16:1 on
+hover), the red buttons 10:1 (16:1 on hover), the Delete button 9.2:1 on hover. Repeat it with
+the axe DevTools extension or any contrast checker.
+
+Automated checks run in `npm test` (`__tests__/accessibility.test.js`, axe-core through jsdom).
+Not done: testing with a screen reader.
 
 ## API Endpoints
 
-| Method | Endpoint              | Description                                                            | Success                                      |
-| ------ | --------------------- | ---------------------------------------------------------------------- | -------------------------------------------- |
-| GET    | `/`                   | Home page                                                              | 200 HTML                                     |
-| GET    | `/lost-items`         | Lost items list, newest first                                          | 200 HTML                                     |
-| GET    | `/lost-items/new`     | Report-a-lost-item form                                                | 200 HTML                                     |
-| POST   | `/lost-items`         | Form submit from HTMX; answers with an HTML fragment (no `<html>`)     | 201 or 400 HTML fragment                     |
-| GET    | `/lost-items/:id`     | Item details page with edit form and delete button                     | 200 HTML (400 / 404 error page)              |
-| PATCH  | `/lost-items/:id`     | Edit from HTMX; answers with a fragment (saved message + updated card) | 200 HTML fragment (400 / 404 error fragment) |
-| DELETE | `/lost-items/:id`     | Delete from HTMX; sets `HX-Redirect: /lost-items`                      | 200 HTML fragment (400 / 404 error fragment) |
-| GET    | `/login`              | Login page (redirects to `/lost-items` when already logged in)         | 200 HTML                                     |
-| GET    | `/signup`             | Signup page (redirects to `/lost-items` when already logged in)        | 200 HTML                                     |
-| POST   | `/auth/signup`        | Create an account. JSON by default; HTML fragment for HTMX forms       | 201 (400 / 409)                              |
-| POST   | `/auth/login`         | Log in. JSON by default; `HX-Redirect` for HTMX forms                  | 200 (400 / 401)                              |
-| POST   | `/auth/logout`        | Log out. JSON by default; `HX-Redirect: /` for HTMX forms              | 200                                          |
-| GET    | `/auth/me`            | The logged-in user as JSON                                             | 200 (401)                                    |
-| GET    | `/api/lost-items`     | List items as JSON, newest first                                       | 200 JSON                                     |
-| POST   | `/api/lost-items`     | Create a lost item                                                     | 201 JSON                                     |
-| GET    | `/api/lost-items/:id` | Get one item as JSON                                                   | 200 JSON (400 / 404)                         |
-| PATCH  | `/api/lost-items/:id` | Update the editable fields                                             | 200 JSON (400 / 404)                         |
-| DELETE | `/api/lost-items/:id` | Delete an item                                                         | 200 JSON (400 / 404)                         |
+| Method | Endpoint              | Description                                                                          | Success                                                  |
+| ------ | --------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| GET    | `/`                   | Home page                                                                            | 200 HTML                                                 |
+| GET    | `/lost-items`         | Lost items list, newest first                                                        | 200 HTML                                                 |
+| GET    | `/lost-items/new`     | Report-a-lost-item form                                                              | 200 HTML                                                 |
+| POST   | `/lost-items`         | Form submit from HTMX; answers with an HTML fragment (no `<html>`)                   | 201 or 400 HTML fragment                                 |
+| GET    | `/lost-items/:id`     | Item details page with edit form and delete button                                   | 200 HTML (400 / 404 error page)                          |
+| PATCH  | `/lost-items/:id`     | Edit from HTMX (login + owner or admin); answers with a fragment                     | 200 HTML fragment (400 / 401 / 403 / 404 error fragment) |
+| DELETE | `/lost-items/:id`     | Delete from HTMX (login + owner or admin); sets `HX-Redirect: /lost-items?deleted=1` | 200 HTML fragment (400 / 401 / 403 / 404 error fragment) |
+| GET    | `/login`              | Login page (redirects to `/lost-items` when already logged in)                       | 200 HTML                                                 |
+| GET    | `/signup`             | Signup page (redirects to `/lost-items` when already logged in)                      | 200 HTML                                                 |
+| POST   | `/auth/signup`        | Create an account. JSON by default; HTML fragment for HTMX forms                     | 201 (400 / 409)                                          |
+| POST   | `/auth/login`         | Log in. JSON by default; `HX-Redirect` for HTMX forms                                | 200 (400 / 401)                                          |
+| POST   | `/auth/logout`        | Log out. JSON by default; `HX-Redirect: /` for HTMX forms                            | 200                                                      |
+| GET    | `/auth/me`            | The logged-in user as JSON                                                           | 200 (401)                                                |
+| GET    | `/api/lost-items`     | List items as JSON, newest first                                                     | 200 JSON                                                 |
+| POST   | `/api/lost-items`     | Create a lost item                                                                   | 201 JSON                                                 |
+| GET    | `/api/lost-items/:id` | Get one item as JSON                                                                 | 200 JSON (400 / 404)                                     |
+| PATCH  | `/api/lost-items/:id` | Update the editable fields (login + owner or admin)                                  | 200 JSON (400 / 401 / 403 / 404)                         |
+| DELETE | `/api/lost-items/:id` | Delete an item (login + owner or admin)                                              | 200 JSON (400 / 401 / 403 / 404)                         |
+| GET    | `/health`             | Health check, no login needed                                                        | 200 JSON `{"status":"ok"}`                               |
 
 Example POST request:
 
@@ -246,6 +336,7 @@ npm test
 - `__tests__/itemDetailsFragments.test.js` — details page, edit (`PATCH`) and delete (`DELETE`) fragments, error cases and the `HX-Redirect` header; the service is mocked.
 - `__tests__/authPages.test.js` — login and signup pages, guest and logged-in navigation, and the fragments and `HX-Redirect` headers the auth endpoints send to HTMX forms; the services are mocked.
 - `__tests__/accessibility.test.js` — runs axe-core (through jsdom) on every page and checks the skip link, labels, hints, link names, unique ids and focus handling.
+- `__tests__/requireLoginPages.test.js` — guests are redirected (pages) or get a 401 (API and HTMX).
 - No MongoDB is needed; all tests pass with the database environment unset.
 - CI runs `npm test -- --ci` in `.github/workflows/test.yml`.
 
@@ -265,7 +356,8 @@ server.js
   |
   v
 app.js
-(Express app, session middleware, routers, error handler)
+(Express app: session middleware from config/session.js,
+GET /health, routers, error handler)
   |
   v
 middleware/attachUser.js
@@ -278,10 +370,11 @@ Authentication                 Lost Items
   |                               |
   v                               v
 authRoutes.js                 lostItemsRoutes.js
-  |                          (requireLogin for
+authPagesRoutes.js           (requireLogin for
   |                           create/edit/delete)
   v                               |
 authController.js                 v
+authPagesController.js
   |                          lostItemsController.js
   v                               |
 authService.js                    v
@@ -289,8 +382,11 @@ authService.js                    v
   |                          (validation, owner/admin
   |                           permission checks)
   |                               |
-  v                               v
-User model                 lostItemsRepository.js
+  v                               |
+usersRepository.js                |
+  |                               v
+  v                        lostItemsRepository.js
+User model                        |
   |                               |
   |                               v
   |                         LostItem model
@@ -301,7 +397,6 @@ User model                 lostItemsRepository.js
                 MongoDB
           (users, lostitems)
 ```
-
 
 **Tests (Jest)**
 
@@ -371,9 +466,13 @@ The first prints the "saved" fragment, the second shows the `HX-Redirect: /lost-
 
 ## Limitations
 
-Users can now sign up, log in and log out, but the application does not yet use the login to protect reports (authorization). Users do not need to log in to create, view, edit, or delete lost item reports. As a result, any visitor can modify or delete reports created by other users.
-
-This is a security limitation of the current implementation. We plan to address this in Sprint 4 by implementing authentication and authorization. Each lost item report will be associated with its owner, and only authorized users will be allowed to edit or delete their own reports.
+- The details page still shows **Edit** and **Delete** to every visitor. A person who is not the
+  owner (or an admin) gets a clear 403 message when they try, but the buttons are not hidden yet.
+- Items reported before ownership existed have no owner, so only an admin can change them.
+- There is no CSRF token. `sameSite=lax` cookies reduce the risk, but a token would be safer.
+- There is no password reset, email check or rate limiting on login.
+- Not tested with a screen reader, and not tested against a real MongoDB in CI (the tests mock
+  the repositories).
 
 ## Design Decisions
 

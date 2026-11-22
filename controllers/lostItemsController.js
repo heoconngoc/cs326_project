@@ -23,11 +23,17 @@ const toPublicItem = (item) => ({
 });
 
 const resultStatus = (error) => {
-  if(error === "Authentication required") return 401;
-  if(error === "Forbidden") return 403;
-  if(error === "Item not found") return 404;
+  if (error === "Authentication required") return 401;
+  if (error === "Forbidden") return 403;
+  if (error === "Item not found") return 404;
   return 400;
 };
+
+// Plain-language text for the fragments people read.
+const friendlyError = (error) =>
+  error === "Forbidden"
+    ? "You can only change or delete items you reported."
+    : error;
 
 const sendResultError = (res, result) =>
   res.status(resultStatus(result.error)).json({
@@ -46,6 +52,7 @@ export const showLostItemsPage = async (req, res) => {
     title: "Lost Items",
     active: "lost-items",
     items: items.map(toPublicItem),
+    deleted: req.query.deleted === "1",
   });
 };
 
@@ -127,16 +134,16 @@ export const deleteLostItemApi = async (req, res) => {
   });
 };
 
-// Called by the edit form on the detail page through HTMX (hx-patch). Answers
-// with a fragment: the saved confirmation (the updated card rides along as an
-// out-of-band swap) or the error message with the right status.
 export const submitLostItemEdit = async (req, res) => {
   const result = await updateLostItem(req.params.id, req.body, req.user);
 
   if (!result.ok) {
     return res
       .status(resultStatus(result.error))
-      .render("fragments/form-error", { message: result.error });
+      .render("fragments/form-error", {
+        heading: "We couldn't save your changes.",
+        message: friendlyError(result.error),
+      });
   }
 
   res.render("fragments/item-updated", {
@@ -146,19 +153,21 @@ export const submitLostItemEdit = async (req, res) => {
   });
 };
 
-// Called by the Delete button on the detail page through HTMX (hx-delete).
-// HX-Redirect makes htmx send the browser to the list, where the item is gone.
-// The fragment is what other callers (for example curl) see.
 export const submitLostItemDelete = async (req, res) => {
   const result = await deleteLostItem(req.params.id, req.user);
 
   if (!result.ok) {
     return res
       .status(resultStatus(result.error))
-      .render("fragments/form-error", { message: result.error });
+      .render("fragments/form-error", {
+        heading: "We couldn't delete this report.",
+        message: friendlyError(result.error),
+      });
   }
 
-  res.set("HX-Redirect", "/lost-items").render("fragments/item-deleted");
+  res
+    .set("HX-Redirect", "/lost-items?deleted=1")
+    .render("fragments/item-deleted");
 };
 
 export const showLostItemDetails = async (req, res) => {

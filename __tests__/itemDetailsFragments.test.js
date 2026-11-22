@@ -1,4 +1,4 @@
-import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
+import { jest, beforeAll, afterAll, beforeEach, expect } from "@jest/globals";
 
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
@@ -181,7 +181,7 @@ describe("PATCH /lost-items/:id (HTMX edit)", () => {
     expect(mockUpdateLostItem).toHaveBeenCalledWith(
       ID,
       expect.objectContaining({ title: "Blue umbrella" }),
-      testUser
+      testUser,
     );
   });
 
@@ -243,7 +243,7 @@ describe("DELETE /lost-items/:id (HTMX delete)", () => {
     const html = await res.text();
 
     expect(res.status).toBe(200);
-    expect(res.headers.get("hx-redirect")).toBe("/lost-items");
+    expect(res.headers.get("hx-redirect")).toBe("/lost-items?deleted=1");
     expect(html).toContain("deleted");
     expect(html).not.toMatch(/<html|<body/i);
     expect(mockDeleteLostItem).toHaveBeenCalledWith(ID, testUser);
@@ -257,6 +257,17 @@ describe("DELETE /lost-items/:id (HTMX delete)", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get("hx-redirect")).toBeNull();
     expect(await res.text()).toContain("Item not found");
+  });
+
+  test("403: someone else's item is refused with a plain message and no redirect", async () => {
+    mockDeleteLostItem.mockResolvedValue(Err("Forbidden"));
+
+    const res = await remove(ID);
+    const html = await res.text();
+
+    expect(res.status).toBe(403);
+    expect(res.headers.get("hx-redirect")).toBeNull();
+    expect(html).toContain("You can only change or delete items you reported");
   });
 
   test("400: malformed id", async () => {
@@ -296,5 +307,20 @@ describe("JSON API by id is untouched", () => {
     expect(res.status).toBe(200);
     expect(body.data.id).toBe(ID);
     expect(body.data).not.toHaveProperty("contactInfo");
+  });
+});
+
+describe("GET /lost-items?deleted=1 (focus after a delete)", () => {
+  test("shows a focusable status message only after a delete", async () => {
+    mockGetAllLostItems.mockResolvedValue([]);
+
+    const after = await (await fetch(`${base}/lost-items?deleted=1`)).text();
+    const plain = await (await fetch(`${base}/lost-items`)).text();
+
+    expect(after).toMatch(
+      /id="list-message"[^>]*role="status"[^>]*tabindex="-1"/,
+    );
+    expect(after).toContain("getElementById('list-message').focus()");
+    expect(plain).not.toContain("list-message");
   });
 });

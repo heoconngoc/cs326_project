@@ -5,6 +5,14 @@
   <a class="rounded-lg bg-red-900 px-4 py-2.5 text-center font-semibold text-white shadow-sm hover:bg-red-950" href="/lost-items/new">Report a lost item</a>
 </div>
 
+<% if (typeof deleted !== 'undefined' && deleted) { %>
+  <div id="list-message" role="status" tabindex="-1" class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-900 focus-visible:ring-offset-2">
+    <p class="font-semibold">The report was deleted.</p>
+    <p class="mt-1 text-sm">The Lost Items list below is up to date.</p>
+  </div>
+  <script>document.getElementById('list-message').focus();</script>
+<% } %>
+
 <% if (items.length === 0) { %>
   <div class="rounded-xl border border-dashed border-stone-300 bg-white px-4 py-12 text-center text-stone-600">
     <p>No lost items have been reported yet.</p>
