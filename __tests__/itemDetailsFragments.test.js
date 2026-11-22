@@ -1,4 +1,4 @@
-import { jest, beforeAll, afterAll, beforeEach } from "@jest/globals";
+import { jest, beforeAll, afterAll, beforeEach, expect } from "@jest/globals";
 
 const mockCreateLostItem = jest.fn();
 const mockGetAllLostItems = jest.fn();
@@ -181,7 +181,7 @@ describe("PATCH /lost-items/:id (HTMX edit)", () => {
     expect(mockUpdateLostItem).toHaveBeenCalledWith(
       ID,
       expect.objectContaining({ title: "Blue umbrella" }),
-      testUser
+      testUser,
     );
   });
 
@@ -317,7 +317,10 @@ describe("GET /lost-items?deleted=1 (focus after a delete)", () => {
     const after = await (await fetch(`${base}/lost-items?deleted=1`)).text();
     const plain = await (await fetch(`${base}/lost-items`)).text();
 
-    expect(after).toMatch(/id="list-message"[^>]*role="status"[^>]*tabindex="-1"[^>]*autofocus/);
+    expect(after).toMatch(
+      /id="list-message"[^>]*role="status"[^>]*tabindex="-1"/,
+    );
+    expect(after).toContain("getElementById('list-message').focus()");
     expect(plain).not.toContain("list-message");
   });
 });

@@ -216,11 +216,11 @@ Log out and log in again (or just reload) and the account is an admin.
 
 ### Authorization: who can change what
 
-| Action | Guest | Logged-in user | Owner of the item | Admin |
-| --- | --- | --- | --- | --- |
-| View list and details | yes | yes | yes | yes |
-| Report an item | login page (401 for API) | yes | yes | yes |
-| Edit / delete an item | login page (401 for API) | **403** if not owner | yes | yes |
+| Action                | Guest                    | Logged-in user       | Owner of the item | Admin |
+| --------------------- | ------------------------ | -------------------- | ----------------- | ----- |
+| View list and details | yes                      | yes                  | yes               | yes   |
+| Report an item        | login page (401 for API) | yes                  | yes               | yes   |
+| Edit / delete an item | login page (401 for API) | **403** if not owner | yes               | yes   |
 
 How it is built (route guard, then the rule in the service):
 
@@ -228,7 +228,7 @@ How it is built (route guard, then the rule in the service):
   A guest who opens a page is redirected to `/login`; an API or HTMX call gets a 401 and nothing
   happens.
 - The service decides who may change what. `updateLostItem` and `deleteLostItem` in
-  `services/lostItemsService.js` load the item, then call `isOwnerOrAdmin(user, item)`. If it
+  `services/lostItemsService.js` load the item, then call `canManageItem(item,currentUser)`. If it
   is false they return `Err("Forbidden")`, which the controller turns into a 403, before the
   repository changes anything.
 - The owner is set by the server: `createLostItem` stores `owner: currentUser.id` from the
@@ -268,17 +268,17 @@ The full audit (method, every finding, known limits) is in
 [docs/accessibility-audit.md](docs/accessibility-audit.md). What it found, what we fixed and
 how to check each fix:
 
-| Found | Fix | How to check |
-| --- | --- | --- |
-| No way to skip the navigation | "Skip to main content" link, first tab stop | Press Tab once on any page: the link appears and Enter jumps to the content |
-| Focus fell to the top of the page after **Save changes** | The Save button has an `id`, so htmx puts focus back on it | Edit an item with the keyboard, press Enter on Save: the ring stays on Save |
-| Focus was lost after a failed Delete (button was disabled during the request) | `hx-sync="this:drop"` replaces `hx-disabled-elt` on all forms | Delete an item that is already gone: focus stays on Delete, the error is read out |
-| Focus went to the top after a successful delete | Delete redirects to `/lost-items?deleted=1`; the list shows a status message that takes focus | Delete an item you own: focus is on "The report was deleted."; Tab goes to the first item |
-| Repeated "View details" links | `aria-label="View details for <title>"` | Tab through the list, or check the accessibility tree |
-| Current page not announced | `aria-current="page"` in the nav | Inspect the active nav link |
-| Hints not tied to inputs; unexplained red `*` | `aria-describedby`; `*` is `aria-hidden` and the form says "Fields marked * are required" | Inspect the input; run a screen reader |
-| Placeholder text was about 2.6:1 | Darker placeholder (about 4.8:1) | Axe DevTools or a contrast checker on a form |
-| Different focus rings on links, buttons, summaries | One focus style in `src/input.css` | Tab through any page: every stop has the same visible ring |
+| Found                                                                         | Fix                                                                                           | How to check                                                                              |
+| ----------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| No way to skip the navigation                                                 | "Skip to main content" link, first tab stop                                                   | Press Tab once on any page: the link appears and Enter jumps to the content               |
+| Focus fell to the top of the page after **Save changes**                      | The Save button has an `id`, so htmx puts focus back on it                                    | Edit an item with the keyboard, press Enter on Save: the ring stays on Save               |
+| Focus was lost after a failed Delete (button was disabled during the request) | `hx-sync="this:drop"` replaces `hx-disabled-elt` on all forms                                 | Delete an item that is already gone: focus stays on Delete, the error is read out         |
+| Focus went to the top after a successful delete                               | Delete redirects to `/lost-items?deleted=1`; the list shows a status message that takes focus | Delete an item you own: focus is on "The report was deleted."; Tab goes to the first item |
+| Repeated "View details" links                                                 | `aria-label="View details for <title>"`                                                       | Tab through the list, or check the accessibility tree                                     |
+| Current page not announced                                                    | `aria-current="page"` in the nav                                                              | Inspect the active nav link                                                               |
+| Hints not tied to inputs; unexplained red `*`                                 | `aria-describedby`; `*` is `aria-hidden` and the form says "Fields marked \* are required"    | Inspect the input; run a screen reader                                                    |
+| Placeholder text was about 2.6:1                                              | Darker placeholder (about 4.8:1)                                                              | Axe DevTools or a contrast checker on a form                                              |
+| Different focus rings on links, buttons, summaries                            | One focus style in `src/input.css`                                                            | Tab through any page: every stop has the same visible ring                                |
 
 Already fine: every input has a real `<label>`, one `<h1>` per page, landmarks, `lang`, and
 no horizontal scrolling at 320 px.
@@ -293,27 +293,27 @@ Not done: testing with a screen reader.
 
 ## API Endpoints
 
-| Method | Endpoint              | Description                                                            | Success                                      |
-| ------ | --------------------- | ---------------------------------------------------------------------- | -------------------------------------------- |
-| GET    | `/`                   | Home page                                                              | 200 HTML                                     |
-| GET    | `/lost-items`         | Lost items list, newest first                                          | 200 HTML                                     |
-| GET    | `/lost-items/new`     | Report-a-lost-item form                                                | 200 HTML                                     |
-| POST   | `/lost-items`         | Form submit from HTMX; answers with an HTML fragment (no `<html>`)     | 201 or 400 HTML fragment                     |
-| GET    | `/lost-items/:id`     | Item details page with edit form and delete button                     | 200 HTML (400 / 404 error page)              |
-| PATCH  | `/lost-items/:id`     | Edit from HTMX (login + owner or admin); answers with a fragment      | 200 HTML fragment (400 / 401 / 403 / 404 error fragment) |
+| Method | Endpoint              | Description                                                                          | Success                                                  |
+| ------ | --------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| GET    | `/`                   | Home page                                                                            | 200 HTML                                                 |
+| GET    | `/lost-items`         | Lost items list, newest first                                                        | 200 HTML                                                 |
+| GET    | `/lost-items/new`     | Report-a-lost-item form                                                              | 200 HTML                                                 |
+| POST   | `/lost-items`         | Form submit from HTMX; answers with an HTML fragment (no `<html>`)                   | 201 or 400 HTML fragment                                 |
+| GET    | `/lost-items/:id`     | Item details page with edit form and delete button                                   | 200 HTML (400 / 404 error page)                          |
+| PATCH  | `/lost-items/:id`     | Edit from HTMX (login + owner or admin); answers with a fragment                     | 200 HTML fragment (400 / 401 / 403 / 404 error fragment) |
 | DELETE | `/lost-items/:id`     | Delete from HTMX (login + owner or admin); sets `HX-Redirect: /lost-items?deleted=1` | 200 HTML fragment (400 / 401 / 403 / 404 error fragment) |
-| GET    | `/login`              | Login page (redirects to `/lost-items` when already logged in)         | 200 HTML                                     |
-| GET    | `/signup`             | Signup page (redirects to `/lost-items` when already logged in)        | 200 HTML                                     |
-| POST   | `/auth/signup`        | Create an account. JSON by default; HTML fragment for HTMX forms       | 201 (400 / 409)                              |
-| POST   | `/auth/login`         | Log in. JSON by default; `HX-Redirect` for HTMX forms                  | 200 (400 / 401)                              |
-| POST   | `/auth/logout`        | Log out. JSON by default; `HX-Redirect: /` for HTMX forms              | 200                                          |
-| GET    | `/auth/me`            | The logged-in user as JSON                                             | 200 (401)                                    |
-| GET    | `/api/lost-items`     | List items as JSON, newest first                                       | 200 JSON                                     |
-| POST   | `/api/lost-items`     | Create a lost item                                                     | 201 JSON                                     |
-| GET    | `/api/lost-items/:id` | Get one item as JSON                                                   | 200 JSON (400 / 404)                         |
-| PATCH  | `/api/lost-items/:id` | Update the editable fields (login + owner or admin)                    | 200 JSON (400 / 401 / 403 / 404)             |
-| DELETE | `/api/lost-items/:id` | Delete an item (login + owner or admin)                                | 200 JSON (400 / 401 / 403 / 404)             |
-| GET    | `/health`             | Health check, no login needed                                          | 200 JSON `{"status":"ok"}`                   |
+| GET    | `/login`              | Login page (redirects to `/lost-items` when already logged in)                       | 200 HTML                                                 |
+| GET    | `/signup`             | Signup page (redirects to `/lost-items` when already logged in)                      | 200 HTML                                                 |
+| POST   | `/auth/signup`        | Create an account. JSON by default; HTML fragment for HTMX forms                     | 201 (400 / 409)                                          |
+| POST   | `/auth/login`         | Log in. JSON by default; `HX-Redirect` for HTMX forms                                | 200 (400 / 401)                                          |
+| POST   | `/auth/logout`        | Log out. JSON by default; `HX-Redirect: /` for HTMX forms                            | 200                                                      |
+| GET    | `/auth/me`            | The logged-in user as JSON                                                           | 200 (401)                                                |
+| GET    | `/api/lost-items`     | List items as JSON, newest first                                                     | 200 JSON                                                 |
+| POST   | `/api/lost-items`     | Create a lost item                                                                   | 201 JSON                                                 |
+| GET    | `/api/lost-items/:id` | Get one item as JSON                                                                 | 200 JSON (400 / 404)                                     |
+| PATCH  | `/api/lost-items/:id` | Update the editable fields (login + owner or admin)                                  | 200 JSON (400 / 401 / 403 / 404)                         |
+| DELETE | `/api/lost-items/:id` | Delete an item (login + owner or admin)                                              | 200 JSON (400 / 401 / 403 / 404)                         |
+| GET    | `/health`             | Health check, no login needed                                                        | 200 JSON `{"status":"ok"}`                               |
 
 Example POST request:
 
@@ -397,7 +397,6 @@ User model                        |
                 MongoDB
           (users, lostitems)
 ```
-
 
 **Tests (Jest)**
 

@@ -53,7 +53,7 @@ below follow standard patterns for screen readers, but they were not listened to
 - **Native date input:** the browser's own date field takes several Tab presses (month, day, year). That is browser behavior.
 - **Delete confirmation:** it uses `window.confirm`. It is keyboard accessible, but it cannot be styled.
 - **Focus after a successful create or signup:** focus stays in the form and the success message is announced by the live region. If the team wants focus moved to the message, that is a one-line change.
-- **Focus after a successful delete (fixed in Sprint 4):** Delete redirects to `/lost-items?deleted=1`. The list shows a status message with `autofocus`, so focus lands on the message instead of the top of the page, and the next Tab reaches the first item.
+- **Focus after a successful delete (fixed in Sprint 4):** Delete redirects to `/lost-items?deleted=1`. The list shows a status message and a one-line script calls .focus() on it, so focus lands on the message instead of the top of the page, and the next Tab reaches the first item.
 - **Edit and Delete buttons for people who are not the owner:** they are still shown. The server answers 403 with a plain message ("You can only change or delete items you reported.") and keyboard focus stays on the button. Hiding the buttons would be a good follow-up.
 - **No CSRF protection:** `sameSite: lax` cookies help, but this is not an accessibility item. It is worth a look in Sprint 4.
 
